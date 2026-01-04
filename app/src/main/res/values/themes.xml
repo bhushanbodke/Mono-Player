@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="windowSplashScreenBackground">#7DBEDC</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/twotone_play_circle_24</item>
+    </style>
+
+    <style name="Theme.MonoPlayer" parent="android:Theme.Material.Light.NoActionBar">
+    </style>
+</resources>
