@@ -246,7 +246,7 @@ fun BrightnessVolume(
 
         AnimatedVisibility(
             visible = isHolding,
-            modifier = Modifier.align(Alignment.CenterStart),
+            modifier = Modifier.align(Alignment.TopCenter),
             enter = fadeIn()+ expandHorizontally(),
             exit = fadeOut()+ shrinkHorizontally(),
 

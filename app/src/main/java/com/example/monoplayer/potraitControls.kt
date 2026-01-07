@@ -3,6 +3,7 @@ package com.example.monoplayer
 
 
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -131,13 +132,7 @@ fun PortraitControls(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OrientationButton(
-                    isLocked = isLocked,
-                    onToggleLock = {
-                        isLocked = !isLocked
-                        activity.requestedOrientation = if (isLocked) ActivityInfo.SCREEN_ORIENTATION_LOCKED else ActivityInfo.SCREEN_ORIENTATION_USER
-                    }
-                )
+                ModernOrientationButton(vm)
                 IconButton(onClick = showLock) {
                     Icon(painterResource(R.drawable.twotone_lock_24), null, Modifier.size(28.dp), tint = Color.White)
                 }

@@ -258,16 +258,16 @@ fun FullScreenSettings(
             HorizontalDivider(Modifier.size(5.dp).padding(start=20.dp, end = 20.dp),color = MaterialTheme.colorScheme.secondary)
             for(i in enumValues<appsort>())
             {
-                Row(verticalAlignment = Alignment.CenterVertically,modifier = Modifier.padding(start=20.dp, top = 15.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically,modifier = Modifier.padding(start=20.dp, top = 15.dp).clickable {
+                    onChange(i.id)
+                    vm.updateSort(i.id)
+                }) {
                     if(sort == i.id){
                         Icon(modifier=Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary,painter = painterResource(R.drawable.baseline_check_circle_outline_24), contentDescription = "check")
                     }
                     else{Spacer(Modifier.size(20.dp))}
                     Spacer(Modifier.size(20.dp))
-                    Text(i.displayName,fontSize = 18.sp,modifier= Modifier.clickable {
-                        onChange(i.id)
-                        vm.updateSort(i.id)
-                    })
+                    Text(i.displayName,fontSize = 18.sp,modifier= Modifier)
                     Icon(modifier=Modifier.size(20.dp),tint = MaterialTheme.colorScheme.primary,painter = painterResource(if(i.value)R.drawable.baseline_arrow_downward_24 else R.drawable.baseline_arrow_upward_24), contentDescription = "up")
                 }
             }

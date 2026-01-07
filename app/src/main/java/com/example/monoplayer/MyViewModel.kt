@@ -27,12 +27,12 @@ enum class display{
 }
 
 enum class appsort(val id: Int, val displayName: String,val value: Boolean){
-    nameAsc(0,"Name",false),
-    nameDsc(1,"Name ",true),
-    sizeAsc(2,"Size ",false),
-    sizeDsc(3,"Size ",true),
-    dateAsc(4,"Date ",false),
-    dateDsc(5,"Date ",true)
+    nameAsc(0,"Name Ascending",false),
+    nameDsc(1,"Name Descending",true),
+    sizeAsc(2,"Size Ascending",false),
+    sizeDsc(3,"Size Descending",true),
+    dateAsc(4,"Date Ascending",false),
+    dateDsc(5,"Date Descending",true)
 }
 
 enum class Screens{
@@ -54,19 +54,29 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
     var folderMap = MutableStateFlow<Map<String, List<String>>>(mapOf());
     val subScale = MutableStateFlow(1.0f)
 
-    val settings  = MutableStateFlow(settingBox.all)
+    val settings  = MutableStateFlow(settingBox.all[0])
     val isPip = MutableStateFlow(false)
+    val IsOrientLocked = MutableStateFlow(true);
+    val lastOrientation = MutableStateFlow(settings.value.lastOrient);
 
     lateinit var libVLC:LibVLC;
 
 
     lateinit var context:Context
 
+    fun SavelastOrientation(value:Int){
+        lastOrientation.value = value
+        val currentSetting = settingBox.all.firstOrNull() ?: Setting()
+        currentSetting.lastOrient = value
+        settingBox.put(currentSetting)
+        settings.value = settingBox.all[0]
+    }
+
     fun updateSort(sort: Int){
         val currentSetting = settingBox.all.firstOrNull() ?: Setting()
         currentSetting.Sort = sort
         settingBox.put(currentSetting)
-        settings.value = listOf(currentSetting)
+        settings.value = settingBox.all[0]
     }
 
     fun UpdateLastPlayed(folder: String, id: Long) {
@@ -93,13 +103,14 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             folderFiles.value =
                 AllFiles.value.filter { it.path.substringBeforeLast("/") == titlePath.value };}
+        settings.value = settings.value.copy();
     }
 
     init {
         viewModelScope.launch {
-            settings.collect { newSort ->
-                if(newSort.isEmpty())return@collect
-                folderFiles.value = when (newSort[0].Sort) {
+            settings.collect { setting ->
+                if(setting==null)return@collect
+                folderFiles.value = when (setting.Sort) {
                     0 -> { folderFiles.value.sortedBy { it.name }}
                     1 -> {folderFiles.value.sortedByDescending { it.name }}
                     2 -> { folderFiles.value.sortedBy { it.size }}

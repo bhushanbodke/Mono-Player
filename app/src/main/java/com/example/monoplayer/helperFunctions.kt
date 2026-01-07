@@ -4,15 +4,20 @@ import android.app.Activity
 import android.app.RecoverableSecurityException
 import android.content.ContentUris
 import android.content.Context
+import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.view.Surface
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,11 +25,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -32,9 +41,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import org.videolan.libvlc.Media
@@ -233,4 +245,53 @@ fun deleteMediaByUri(
     } catch (e: Exception) {
         e.printStackTrace()
     }
+}
+
+
+
+
+fun toggleOrientation(activity: MainActivity, isCurrentlyLocked: Boolean,vm: MyViewModel) {
+    if (isCurrentlyLocked) {
+        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+    } else {
+        // LOCK: Determine current state and freeze it
+        val rotation = activity.windowManager.defaultDisplay.rotation
+
+        when (rotation) {
+            Surface.ROTATION_90 -> {
+                activity.requestedOrientation =
+                    ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE; vm.SavelastOrientation(0); }
+
+            Surface.ROTATION_270 -> {
+                activity.requestedOrientation =
+                    ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE; vm.SavelastOrientation(1); }
+
+            Surface.ROTATION_180 -> {
+                activity.requestedOrientation =
+                    ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT; vm.SavelastOrientation(2); }
+
+            else -> {
+                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                vm.SavelastOrientation(2)
+            }
+        }
+    }
+}
+fun formatTime(ms: Long): String {
+    val totalSeconds = ms / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "%02d:%02d".format(minutes, seconds)
+}
+fun enterVideoMode(vm: MyViewModel,activity: MainActivity) {
+    activity.requestedOrientation  = when(vm.lastOrientation.value){
+        0->ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        1->ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+        2->ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        else->ActivityInfo.SCREEN_ORIENTATION_SENSOR
+    }
+}
+
+fun exitVideoMode(activity: MainActivity) {
+    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 }

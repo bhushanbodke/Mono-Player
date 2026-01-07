@@ -1,5 +1,6 @@
 package com.example.monoplayer
 
+import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.util.Log
@@ -31,6 +32,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -57,6 +61,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -84,6 +89,7 @@ fun PlayerControls(
     var Display by remember { mutableStateOf(display.none) }
     var LockedControl by remember { mutableStateOf(false) }
     var brightness by rememberSaveable { mutableStateOf(-1f) }
+
 
     val activity = LocalActivity.current as MainActivity
     val configuration = LocalConfiguration.current
@@ -189,38 +195,6 @@ fun PlayerControls(
 }
 
 
-@Composable
-fun OrientationButton(
-    isLocked: Boolean,
-    onToggleLock: () -> Unit
-) {
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
-    Icon(
-        painter = painterResource(
-            id = when {
-                isLocked && isLandscape -> R.drawable.twotone_screen_lock_landscape_24
-                isLocked -> R.drawable.twotone_screen_lock_portrait_24
-                isLandscape -> R.drawable.twotone_stay_primary_landscape_24
-                else -> R.drawable.twotone_stay_primary_portrait_24
-            }
-        ),
-        modifier = Modifier
-            .size(30.dp)
-            .clickable { onToggleLock() },
-        contentDescription = "Orientation Lock",
-        tint = Color.White
-    )
-}
-
-
-fun formatTime(ms: Long): String {
-    val totalSeconds = ms / 1000
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return "%02d:%02d".format(minutes, seconds)
-}
 @Composable
 fun rememberOrientation(): Int {
     val configuration = LocalConfiguration.current

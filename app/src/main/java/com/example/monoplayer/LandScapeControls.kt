@@ -1,8 +1,10 @@
 package com.example.monoplayer
 
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -19,8 +21,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -126,15 +130,7 @@ fun LandScapeControls(
                     horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OrientationButton(
-                        isLocked = isLocked,
-                        onToggleLock = {
-                            isLocked = !isLocked
-                            activity.requestedOrientation = if (isLocked)
-                                ActivityInfo.SCREEN_ORIENTATION_LOCKED
-                            else ActivityInfo.SCREEN_ORIENTATION_USER
-                        }
-                    )
+                    ModernOrientationButton(vm)
                     Spacer(modifier = Modifier.width(24.dp))
                     IconButton(onClick = showLock) {
                         Icon(painterResource(R.drawable.twotone_lock_24), null, Modifier.size(28.dp), tint = Color.White)
@@ -194,5 +190,30 @@ fun LandScapeControls(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun ModernOrientationButton(vm: MyViewModel, modifier: Modifier = Modifier) {
+    val activity = LocalActivity.current as MainActivity
+    // rememberSaveable survives configuration changes!
+    val isOrientLock = vm.IsOrientLocked.collectAsState()
+
+    Box(
+        modifier = modifier
+            .size(42.dp)
+            .clip(CircleShape)
+            .clickable {
+                toggleOrientation(activity,isOrientLock.value,vm)
+                vm.IsOrientLocked.value = !vm.IsOrientLocked.value
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painterResource( if (isOrientLock.value) R.drawable.twotone_screen_lock_landscape_24 else R.drawable.twotone_screen_rotation_24),
+            contentDescription = "Orientation",
+            tint = if (isOrientLock.value) MaterialTheme.colorScheme.primary else Color.White,
+            modifier = Modifier.size(24.dp)
+        )
     }
 }

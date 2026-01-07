@@ -64,9 +64,33 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "4:4009854156861604568",
+      "lastPropertyId": "3:4084975320307544248",
+      "name": "Setting",
+      "properties": [
+        {
+          "id": "1:7350874010184865991",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:319056623191694458",
+          "name": "Sort",
+          "type": 5
+        },
+        {
+          "id": "3:4084975320307544248",
+          "name": "UiMode",
+          "type": 1
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "3:5329358537641479886",
+  "lastEntityId": "4:4009854156861604568",
   "lastIndexId": "3:1870557701382097766",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",

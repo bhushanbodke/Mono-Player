@@ -21,6 +21,7 @@ data class Setting(
     @Id var id: Long = 0,
     var Sort: Int = 0,
     var UiMode: Boolean = false,
+    var lastOrient:Int = 0,
 )
 
 

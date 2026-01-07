@@ -89,6 +89,7 @@ fun VlcEngine(vm: MyViewModel) {
             onDispose {
                 if (!mediaPlayer.isReleased) {
                     vm.ChangeTime(video.VideoId, mediaPlayer.position)
+                    vm.UpdateLastPlayed(video.path.substringBeforeLast("/"),video.VideoId)
                     mediaPlayer.stop()
                 }
                 media.release()
@@ -99,17 +100,19 @@ fun VlcEngine(vm: MyViewModel) {
 
     // 3. Final cleanup for the Engine when leaving the player screen entirely
     DisposableEffect(Unit) {
+        enterVideoMode(vm,activity);
         onDispose {
             if (!mediaPlayer.isReleased) {
                 // We use try-catch because if media is gone, position access crashes
                 try {
-                    vm.ChangeTime(currentVideo.value!!.VideoId, mediaPlayer.position)
+                    vm.ChangeTime(currentVideo.value!!.VideoId, mediaPlayer.position);
+                    vm.UpdateLastPlayed(currentVideo.value!!.path.substringBeforeLast("/"),currentVideo.value!!.VideoId)
                 } catch (e: Exception) { }
             mediaPlayer.release()
             libVLC.release()
             audioManager.abandonAudioFocus(null)
-            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        }
+            exitVideoMode(activity);
+            }
     }
     }
 
