@@ -34,6 +34,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RippleConfiguration
@@ -80,16 +81,14 @@ fun PlayerControls(
     togglePlaylistFalse:()->Unit,
 )
 {
-    var isLocked by rememberSaveable { mutableStateOf(false) }
-    var isDragging by remember { mutableStateOf(false) }
-    var isPlaying by remember { mutableStateOf(true) }
     var Display by remember { mutableStateOf(display.none) }
     var LockedControl by remember { mutableStateOf(false) }
     var brightness by rememberSaveable { mutableStateOf(-1f) }
 
     val activity = LocalActivity.current as MainActivity
     val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val orientation = rememberOrientation()
+    val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
 
     LaunchedEffect(Display) {
         if (Display !=display.none && Display != display.playlist && Display != display.subtitles) {
@@ -124,182 +123,17 @@ fun PlayerControls(
                 }
                 display.control ->
                 {
-                        Text(
-                            text = video?.name.toString(),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.TopCenter)
-                                .background(
-                                    brush = Brush.verticalGradient(
-                                        colors = listOf(
-                                            Color.Black.copy(alpha = 0.5f), Color.Transparent
-                                        )
-                                    )
-                                )
-                                .padding(
-                                    top = 40.dp,
-                                    start = 50.dp,
-                                    end = 50.dp
-                                ),
-                            color = Color.White, // Add color so it's visible on a dark video
-                            fontSize = 20.sp,
-                            textAlign = TextAlign.Center,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .background(
-                                    brush = Brush.verticalGradient(
-                                        colors = listOf(
-                                            Color.Transparent,
-                                            Color.Black.copy(alpha = 0.5f)
-                                        )
-                                    )
-                                )
-                                .pointerInput(Unit) {
-                                    detectDragGestures(
-                                        onDrag = { change, dragAmount ->
-                                            if (change.pressed) {
-                                                change.consume()
-                                            }
-                                        }
-                                    )
-                                }
-                        )
-                        {
-                            VideoProgressSlider(
-                                mediaPlayer,
-                                isDraggingExternal = isDragging,
-                                onSeek = {
-                                    isDragging = true
-                                    mediaPlayer.position = it
-                                },
-                                onFinished = {
-                                    isDragging = false
-                                })
-                            // buttons on bottom
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier
-                                    .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
-                                    .fillMaxWidth()
-                                    .height(75.dp)
-                            )
-                            {
-                                Row(
-                                    modifier = Modifier.weight(1f), // Give the center more "space"
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    OrientationButton(
-                                        isLocked = isLocked,
-                                        onToggleLock = {
-                                            if (!isLocked) {
-                                                activity?.requestedOrientation =
-                                                    ActivityInfo.SCREEN_ORIENTATION_LOCKED
-                                                isLocked = true
-                                            } else {
-                                                activity?.requestedOrientation =
-                                                    ActivityInfo.SCREEN_ORIENTATION_USER
-                                                isLocked = false
-                                            }
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.width(20.dp))
-                                        Icon(
-                                            painterResource(R.drawable.twotone_lock_24),
-                                            modifier = Modifier
-                                                .size(30.dp)
-                                                .clip(CircleShape)
-                                                .clickable {
-                                                    Display = display.lock
-                                                    LockedControl = true;
-                                                },
-                                            contentDescription = "Lock",
-                                            tint = Color.White,
-                                        )
-
-                                }
-                                Row(
-                                    modifier = Modifier.weight(3f), // Give the center more "space"
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-
-                                    Icon(
-                                        painter = painterResource(R.drawable.baseline_replay_10_24),
-                                        contentDescription = "back",
-                                        tint = Color.White,
-                                        modifier = Modifier
-                                            .clip(CircleShape)
-                                            .size(30.dp)
-                                            .clickable {
-                                                val targetTime = mediaPlayer.time + 10000L
-                                                mediaPlayer.time = targetTime.coerceAtLeast(0L)
-                                            }
-
-                                    )
-                                    Spacer(modifier = Modifier.width(30.dp))
-                                    Icon(
-                                        painter = painterResource(if (isPlaying) R.drawable.twotone_pause_circle_24 else R.drawable.twotone_play_circle_24),
-                                        contentDescription = "Play/Pause",
-                                        tint = Color.White,
-                                        modifier = Modifier
-                                            .clip(CircleShape)
-                                            .size(50.dp)
-                                            .clickable {
-                                                isPlaying = !isPlaying
-                                                if (isPlaying) {
-                                                    mediaPlayer.play()
-                                                } else {
-                                                    mediaPlayer.pause()
-                                                }
-                                            })
-                                    Spacer(modifier = Modifier.width(20.dp))
-                                    Icon(
-                                        painter = painterResource(R.drawable.twotone_forward_10_24),
-                                        contentDescription = "back",
-                                        tint = Color.White,
-                                        modifier = Modifier
-                                            .clip(CircleShape)
-                                            .size(30.dp)
-                                            .clickable {
-                                                val targetTime = mediaPlayer.time - 10000L
-                                                mediaPlayer.time = targetTime.coerceAtLeast(0L)
-                                            }
-                                    )
-                                }
-                                Row(
-                                    modifier = Modifier.weight(1f), // Give the center more "space"
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.twotone_subtitles_24),
-                                        contentDescription = "back",
-                                        tint = Color.White,
-                                        modifier = Modifier
-                                            .clip(CircleShape)
-                                            .size(30.dp)
-                                            .clickable { Display = display.subtitles }
-                                    )
-                                    Spacer(modifier = Modifier.width(20.dp))
-                                    Icon(
-                                        painter = painterResource(R.drawable.twotone_list_24),
-                                        contentDescription = "playlist",
-                                        tint = Color.White,
-                                        modifier = Modifier
-                                            .clip(CircleShape)
-                                            .size(30.dp)
-                                            .clickable {
-                                                Display = display.playlist
-                                                togglePlaylist();
-                                            }
-                                    )
-                                }
-                            }
+                    if (isLandscape) {
+                        // Show your wide Row layout (weight 1f, 3f, 1f)
+                        LandScapeControls(vm,video,mediaPlayer
+                            ,{Display =display.lock;LockedControl = true}
+                            ,{Display = display.subtitles}
+                            ,{Display = display.playlist;togglePlaylist();})
+                    } else {
+                        PortraitControls(vm,video,mediaPlayer
+                            ,{Display =display.lock;LockedControl = true}
+                            ,{Display = display.subtitles}
+                            ,{Display = display.playlist;togglePlaylist();})
                         }
                     }
                 display.playlist->
@@ -331,16 +165,17 @@ fun PlayerControls(
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.secondary.copy(0.5f)))
                         {
-                            Icon(
-                                painter = painterResource(R.drawable.twotone_lock_24),
-                                modifier = Modifier
-                                    .padding(5.dp)
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .clickable { Display = display.control; LockedControl = false },
-                                contentDescription = "Lock",
-                                tint = Color.White
-                            )
+                            IconButton(onClick = {Display = display.control; LockedControl = false }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.twotone_lock_24),
+                                    modifier = Modifier
+                                        .padding(5.dp)
+                                        .size(40.dp)
+                                        .clip(CircleShape),
+                                    contentDescription = "Lock",
+                                    tint = Color.White
+                                )
+                            }
                         }
                     }
                 }
@@ -385,4 +220,16 @@ fun formatTime(ms: Long): String {
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
     return "%02d:%02d".format(minutes, seconds)
+}
+@Composable
+fun rememberOrientation(): Int {
+    val configuration = LocalConfiguration.current
+    var orientation by remember { mutableStateOf(configuration.orientation) }
+
+    // This updates whenever the configuration changes
+    LaunchedEffect(configuration) {
+        orientation = configuration.orientation
+    }
+
+    return orientation
 }

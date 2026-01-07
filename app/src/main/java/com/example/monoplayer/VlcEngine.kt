@@ -1,9 +1,13 @@
 package com.example.monoplayer
 
+import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.media.AudioManager
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import android.util.Rational
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Box
@@ -23,71 +27,57 @@ import org.videolan.libvlc.MediaPlayer
 import org.videolan.libvlc.util.VLCVideoLayout
 
 @Composable
-fun VlcEngine (vm: MyViewModel){
-    val screen = vm.screen.collectAsState()
+fun VlcEngine(vm: MyViewModel) {
     val activity = LocalActivity.current as MainActivity
     val currentVideo = vm.currentVideo.collectAsState()
-    val context = LocalActivity.current
-    val audioManager = context?.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    val audioManager = remember { activity.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
 
-
-    BackHandler (enabled = screen.value == Screens.VideoPlayer) {
+    BackHandler (){
         vm.setScreen(Screens.Videos)
     }
-
-
-
-    LaunchedEffect (Unit) {
-        vm.changeTitlePath(currentVideo.value!!.path.substringBeforeLast("/"))
+    val (libVLC, mediaPlayer) = remember {
+        val lib = LibVLC(activity, arrayListOf(
+            "--file-caching=3000",
+            "--network-caching=3000",
+            "--codec=all"
+        ))
+        val mp = MediaPlayer(lib)
+        lib to mp
     }
 
+    // 2. This Effect runs every time the Video URI changes (Playlist switch)
+    DisposableEffect(currentVideo.value?.uri) {
+        val video = currentVideo.value ?: return@DisposableEffect onDispose {}
+        val uri = Uri.parse(video.uri) ?: return@DisposableEffect onDispose {}
 
+        val pfd = try {
+            activity.contentResolver.openFileDescriptor(uri, "r")
+        } catch (e: Exception) {
+            null
+        }
 
-    vm.libVLC = remember { LibVLC(vm.context, arrayListOf(
-        "--file-caching=3000",
-        "--network-caching=3000",
-        "--codec=all",
-        "--drop-late-frames",
-        "--skip-frames",
-        "--audio-resampler=soxr"
-    )) }
-    val mediaPlayer = remember { MediaPlayer(vm.libVLC) }
-
-
-    DisposableEffect (Uri.parse(currentVideo.value?.uri))
-    {
-
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
-
-        val uri = Uri.parse(currentVideo.value?.uri) ?: return@DisposableEffect onDispose {}
-
-        // 1. Get the File Descriptor from the ContentResolver
-        val pfd = vm.context.contentResolver.openFileDescriptor(uri, "r")
-
-        pfd?.let {
-            // 2. Create Media using the File Descriptor
-            val media = Media(vm.libVLC, pfd.fileDescriptor).apply {
+        pfd?.let { fd ->
+            val media = Media(libVLC, fd.fileDescriptor).apply {
                 addOption(":sub-text-scale=${vm.subScale.value}")
-                setHWDecoderEnabled(true, false) // Hardware on, but no frame-skipping
+                setHWDecoderEnabled(true, false)
             }
 
+            // SETTING MEDIA SAFELY
             mediaPlayer.media = media
+
             mediaPlayer.setEventListener { event ->
                 when (event.type) {
                     MediaPlayer.Event.Playing -> {
-                        // Only set position once. Use a flag or check if position is still 0
-                        if (mediaPlayer.position == 0f && currentVideo.value?.Time != 0f) {
-                            mediaPlayer.position = currentVideo.value?.Time ?: 0f
-                        }
-                    }
-                    MediaPlayer.Event.ESAdded -> {
-                        val tracks = mediaPlayer.spuTracks
-                        if (tracks != null && tracks.size > 1 && mediaPlayer.spuTrack == -1) {
-                            mediaPlayer.spuTrack = tracks[1].id
+                        if (mediaPlayer.position == 0f && video.Time > 0f) {
+                            mediaPlayer.position = video.Time
                         }
                     }
                     MediaPlayer.Event.EndReached -> {
-                        vm.ChangeTime(currentVideo.value!!.VideoId, 0F,true)
+                        Handler(Looper.getMainLooper()).post {
+                            vm.ChangeTime(video.VideoId, 0F, true)
+                            // If you have a playlist, call vm.playNext() here instead of setScreen
+                            vm.setScreen(Screens.Videos)
+                        }
                     }
                 }
             }
@@ -95,37 +85,36 @@ fun VlcEngine (vm: MyViewModel){
             audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
             mediaPlayer.play()
 
+            // Cleanup just the MEDIA, not the PLAYER, when switching tracks
             onDispose {
                 if (!mediaPlayer.isReleased) {
-                    vm.ChangeTime(currentVideo.value!!.VideoId, mediaPlayer.position)
-                    vm.UpdateLastPlayed("Internal Storage/", currentVideo.value!!.VideoId)
-                    vm.UpdateLastPlayed(vm.titlePath.value, currentVideo.value!!.VideoId)
+                    vm.ChangeTime(video.VideoId, mediaPlayer.position)
+                    mediaPlayer.stop()
                 }
                 media.release()
-                it.close()
+                fd.close()
             }
-        } ?: onDispose { }
+        } ?: onDispose {}
     }
-    // 3. Display the Video
+
+    // 3. Final cleanup for the Engine when leaving the player screen entirely
     DisposableEffect(Unit) {
         onDispose {
-            try {
-                if (!mediaPlayer.isReleased && mediaPlayer.hasMedia()) {
+            if (!mediaPlayer.isReleased) {
+                // We use try-catch because if media is gone, position access crashes
+                try {
                     vm.ChangeTime(currentVideo.value!!.VideoId, mediaPlayer.position)
-                    vm.UpdateLastPlayed("Internal Storage/", currentVideo.value!!.VideoId)
-                    vm.UpdateLastPlayed(vm.titlePath.value, currentVideo.value!!.VideoId)
-
-                }
-            } catch (e: Exception) {
-            }
-
-            mediaPlayer.stop()
+                } catch (e: Exception) { }
             mediaPlayer.release()
-            vm.libVLC.release()
+            libVLC.release()
             audioManager.abandonAudioFocus(null)
             activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         }
     }
-    VideoPlayer(vm,mediaPlayer,currentVideo.value!!)
+    }
+
+    VideoPlayer(vm, mediaPlayer, currentVideo.value!!)
 }
+
+
 

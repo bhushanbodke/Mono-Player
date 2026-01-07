@@ -8,7 +8,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -34,35 +36,39 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.overscroll
 import androidx.compose.foundation.rememberOverscrollEffect
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.resource.bitmap.VideoDecoder
 
 @Composable
 fun FolderScreen(vm:MyViewModel) {
@@ -106,103 +112,114 @@ fun FolderScreen(vm:MyViewModel) {
                     .overscroll(rememberOverscrollEffect())
             )
             {
-                items(files.value.size, key = { files.value[it].VideoId }, contentType = { "VideoModel" }) { id ->
-                    Spacer(modifier = Modifier.size(5.dp));
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(125.dp)
-                            .padding(start = 5.dp, top = 10.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                    ) {
-                        Box(Modifier
-                            .size(120.dp, 84.dp)
-                        ) {
-                            Box(Modifier.align(Alignment.Center)){
-                                Box(Modifier
-                                    .align(Alignment.Center)
-                                    .size(120.dp, 80.dp)){
-                                    VideoThumbnail(files.value[id].path)
-                                }
-                                if(files.value[id].isFinished) {
-                                    Icon(painterResource(R.drawable.baseline_done_all_24), contentDescription = "isfinshed",
-                                        Modifier
-                                            .size(10.dp)
-                                            .align(Alignment.TopEnd))
-                                }
-                                Text(
-                                    text = formatTime(files.value[id].duration.toLong()),
-                                    modifier = Modifier
-                                        .padding(1.dp)
-                                        .align(Alignment.BottomEnd)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(Color.Black.copy(0.6f))
-                                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                                    fontSize = 8.sp,
-                                    lineHeight = 8.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                            if (files.value[id].Time > 0f) {
-                                Box(Modifier.align(Alignment.BottomCenter)) {
-                                    SquareProgressBar(progress = files.value[id].Time)
-                                }
-                            }
-                        }
+                items(files.value.size, key = { files.value[it].VideoId }, contentType = { "VideoModel" })
+                { id ->
+                    Box(Modifier.fillMaxWidth().animateItem()){
+                        Spacer(modifier = Modifier.size(5.dp));
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(125.dp)
+                                .padding(start = 5.dp, top = 10.dp)
+                                .clip(RoundedCornerShape(10.dp))
 
-                        Column(
-                            Modifier
-                                .weight(1f)
-                                .pointerInput(Unit) {
-                                    detectTapGestures(
-                                        onTap = {
-                                            vm.updateCurrentVideo(files.value[id]);
-                                            vm.setScreen(Screens.VideoPlayer);
-                                        },
-                                        onLongPress = {
-                                            MoreVisible = true
-                                            SelectedVideoId = files.value[id]
-                                        }
+                        ) {
+                            Box(Modifier
+                                .size(120.dp, 84.dp)
+                            ) {
+                                Box(Modifier.align(Alignment.Center)){
+                                    Box(Modifier
+                                        .align(Alignment.Center)
+                                        .size(120.dp, 80.dp)){
+                                        VideoThumbnail(files.value[id].path)
+                                    }
+                                    if(files.value[id].isFinished) {
+                                        Icon(painterResource(R.drawable.baseline_done_all_24), contentDescription = "isfinshed",
+                                            Modifier
+                                                .size(15.dp)
+                                                .align(Alignment.TopEnd)
+                                                .clip(CircleShape)
+                                                .background(Color.Black.copy(0.6f)))
+                                    }
+                                    Text(
+                                        text = formatTime(files.value[id].duration.toLong()),
+                                        modifier = Modifier
+                                            .padding(1.dp)
+                                            .align(Alignment.BottomEnd)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(Color.Black.copy(0.6f))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                                        fontSize = 8.sp,
+                                        lineHeight = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
                                     )
                                 }
-                        ) {
-                            Text(
-                                text = files.value[id].name,
-                                fontSize = 16.sp,
-                                maxLines = 3,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(start = 10.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontWeight = FontWeight.Bold
-                            );
-                            Row() {
-                                var text = "${formatFileSize(files.value[id].size) } " +
-                                        "• ${files.value[id].Width}x${files.value[id].Height}"
-                                Text(
-                                    text = text,
-                                    modifier = Modifier.padding(start = 12.dp),
-                                    fontSize = 12.sp,
-                                    color =Color(0xFFacb0b0)
-                                );
-                                if (files.value[id].isNew) {
-                                    Text(
-                                        text = " • New",
-                                        fontSize = 12.sp,
-                                        color =Color.Cyan
-                                    );
+                                if (files.value[id].Time > 0f) {
+                                    Box(Modifier.align(Alignment.BottomCenter)) {
+                                        SquareProgressBar(progress = files.value[id].Time,4)
+                                    }
                                 }
                             }
-                        }
-                        Icon(painterResource(R.drawable.baseline_more_vert_24), contentDescription = "more"
-                            , Modifier
-                                .width(30.dp)
-                                .height(30.dp)
-                                .clickable {
+
+                            Column(
+                                Modifier
+                                    .weight(1f)
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(
+                                            onTap = {
+                                                vm.updateCurrentVideo(files.value[id]);
+                                                vm.setScreen(Screens.VideoPlayer);
+                                            },
+                                            onLongPress = {
+                                                MoreVisible = true
+                                                SelectedVideoId = files.value[id]
+                                            }
+                                        )
+                                    }
+                            ) {
+                                Text(
+                                    text = files.value[id].name,
+                                    fontSize = 16.sp,
+                                    maxLines = 3,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(start = 10.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    fontWeight = FontWeight.Bold
+                                );
+                                Row() {
+                                    if (files.value[id].isNew) {
+                                        Text(
+                                            text = "New",
+                                            modifier = Modifier.padding(start = 12.dp),
+                                            fontSize = 12.sp,
+                                            color =Color.Cyan
+                                        );
+                                    }
+                                    val videoInfo = remember(files.value[id]) {
+                                        " • ${formatFileSize(files.value[id].size)} • ${files.value[id].Width}x${files.value[id].Height}"
+                                    }
+                                    Text(
+                                        text = videoInfo,
+                                        fontSize = 12.sp,
+                                        color =Color(0xFFacb0b0)
+                                    );
+
+                                }
+                            }
+                            IconButton(
+                                onClick = {
                                     MoreVisible = true
                                     SelectedVideoId = files.value[id]
-                                })
+                                }
+                            ) {
+                                Icon(painterResource(R.drawable.baseline_more_vert_24), contentDescription = "more"
+                                    , Modifier
+                                        .width(30.dp)
+                                        .height(30.dp))
+                            }
+                        }
                     }
                 }
             }
@@ -241,8 +258,8 @@ fun MoreInfo(video: VideoModel, ToggleVisible:()->Unit
             .fillMaxWidth()
             .padding(start = 3.dp, end = 3.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFF323634))
-            .border(5.dp, Color(0xFF323634), RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(2.dp, MaterialTheme.colorScheme.surface, RoundedCornerShape(10.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -251,7 +268,7 @@ fun MoreInfo(video: VideoModel, ToggleVisible:()->Unit
             Box(Modifier
                 .fillMaxWidth()
                 .height(250.dp)){
-                VideoThumbnail(video.path);
+                VideoThumbnailLoop(video.uri,video.duration.toLong());
             }
             Text(text = video.name, fontSize = 18.sp, fontWeight = FontWeight.Bold,modifier=Modifier.padding(20.dp))
             HorizontalDivider(Modifier
@@ -275,37 +292,81 @@ fun MoreInfo(video: VideoModel, ToggleVisible:()->Unit
 }
 @OptIn( ExperimentalGlideComposeApi::class)
 @Composable
-fun VideoThumbnail(videoPath: String) {
-    GlideImage(
+fun VideoThumbnail(videoPath: String,high: Boolean = false) {
+    if(!high){GlideImage(
         model = videoPath,
         contentDescription = "Video Thumbnail",
         modifier = Modifier
             .fillMaxSize()
             .clip(RoundedCornerShape(8.dp)),
         contentScale = ContentScale.Crop
+
     )
     {
-        it.override(300, 200)
-            .centerCrop()
-            .placeholder(R.drawable.twotone_video_file_24)
-            .error(R.drawable.twotone_subtitles_24)
+            it.override(300, 200)
+                .centerCrop()
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .placeholder(R.drawable.twotone_video_file_24)
+                .error(R.drawable.twotone_subtitles_24)
+    }}
+    else{
+        GlideImage(
+            model = videoPath,
+            contentDescription = "Video Thumbnail",
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Crop
+
+        ){
+            it.diskCacheStrategy(DiskCacheStrategy.ALL)
+        }
     }
 }
 
 @Composable
-fun SquareProgressBar(progress: Float,height:Int = 4) { // progress is 0.0f to 1.0f
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(height.dp)
-            .background(Color.White) // This is the "Track"
-    ) {
-        Box(
+fun SquareProgressBar(progress: Float ,height:Int) {
+        val progressColor = MaterialTheme.colorScheme.primary
+        Spacer(
             modifier = Modifier
-                .fillMaxWidth(progress) // This sets the length
-                .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.primary) // This is the "Progress"
+                .fillMaxWidth()
+                .height(height.dp)
+                .background(Color.White)
+                .drawWithContent {
+                    drawContent()
+                    drawRect(
+                        color = progressColor,
+                        size = size.copy(width = size.width * progress)
+                    )
+                }
         )
-    }
 }
 
+@OptIn(ExperimentalGlideComposeApi::class)
+@Composable
+fun VideoThumbnailLoop(videoUri: String, durationMs: Long) {
+    // 1. Create a timer (Clock) that ticks 0 to 9 every second
+    var tick by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(1000)
+            tick = (tick + 1) % 10
+        }
+    }
+    // Formula: (Duration / 10 intervals) * current tick * 1000 (to get us)
+    val timestampUs = remember(tick) {
+        (durationMs / 10) * tick * 1000L
+    }
+    // 3. Display using GlideImage
+    AnimatedContent(targetState = tick, label = "VideoThumbnailLoop") {
+        GlideImage(
+            model = videoUri,
+            contentDescription = "Thumbnail loop",
+            modifier = Modifier.fillMaxSize().animateContentSize(),
+        ) {
+            it.set(VideoDecoder.TARGET_FRAME, timestampUs)
+                .centerCrop()
+        }
+    }
+}

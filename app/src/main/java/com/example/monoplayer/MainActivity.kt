@@ -1,7 +1,14 @@
 package com.example.monoplayer
 
+import android.app.PendingIntent
+import android.app.PictureInPictureParams
+import android.app.RemoteAction
+import android.content.Intent
+import android.content.res.Configuration
+import android.graphics.drawable.Icon
 import android.os.Bundle
 import android.util.Log
+import android.util.Rational
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -74,6 +81,33 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         vm.Save_data_files();
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        vm.isPip.value = isInPictureInPictureMode
+    }
+    fun enterPipMode(isPlaying:Boolean) {
+        val intent = Intent("ACTION_VIDEO_CONTROL")
+        val pendingIntent = PendingIntent.getBroadcast(
+            this, if (isPlaying) 1 else 0, intent, PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val icon = if (isPlaying) R.drawable.twotone_pause_circle_24 else R.drawable.twotone_play_circle_24
+
+        val action = RemoteAction(
+            Icon.createWithResource(this, icon),
+            "Play/Pause",
+            "Play/Pause",
+            pendingIntent
+        )
+        val params = PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(16, 9)) // Set to your video's aspect ratio
+            .build()
+        enterPictureInPictureMode(params)
     }
 }
 

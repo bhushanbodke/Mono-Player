@@ -55,6 +55,8 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
     val subScale = MutableStateFlow(1.0f)
 
     val settings  = MutableStateFlow(settingBox.all)
+    val isPip = MutableStateFlow(false)
+
     lateinit var libVLC:LibVLC;
 
 
@@ -104,6 +106,7 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
                     3 -> { folderFiles.value.sortedByDescending { it.size }}
                     4 -> {folderFiles.value.sortedBy { it.DateAdded }}
                     5 -> { folderFiles.value.sortedByDescending { it.DateAdded }}
+                    6 -> { folderFiles.value.sortedByDescending { it.isNew }}
                     else->{folderFiles.value}
                 }
             }
@@ -190,5 +193,23 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getFourVideos(folderName:String): MutableList<VideoModel>{
         return AllFiles.value.filter { it.path.substringBeforeLast("/") == folderName }.take(4).toMutableList()
+    }
+
+    fun searchForSubtitles(videoName: String) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.api.getSubtitles(
+                    movieName = videoName
+                )
+
+                if (response.status) {
+                    // Do something with response.results (your list of subtitles)
+                    println("Found ${response.results.size} subtitles!")
+                }
+            } catch (e: Exception) {
+                // This happens if there's no internet or the API is down
+                e.printStackTrace()
+            }
+        }
     }
 }

@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +27,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
@@ -35,6 +38,7 @@ import org.videolan.libvlc.util.VLCVideoLayout
 @Composable
 fun VideoPlayer(vm: MyViewModel, mediaPlayer: MediaPlayer, currentVideo: VideoModel) {
     var playlistVisible by remember { mutableStateOf(false) }
+    var isPip by remember { mutableStateOf(false) }
     val transitionProgress by animateFloatAsState(
         targetValue = if (playlistVisible) 1f else 0f,
         animationSpec = tween (400)
@@ -59,11 +63,13 @@ fun VideoPlayer(vm: MyViewModel, mediaPlayer: MediaPlayer, currentVideo: VideoMo
 
                 }
         )
-
-        PlayerControls(vm,currentVideo,
-            mediaPlayer
-            ,togglePlaylist = {playlistVisible = !playlistVisible}
-            ,togglePlaylistFalse = {playlistVisible = false});
+        if(!vm.isPip.value){
+            PlayerControls(vm,currentVideo,
+                mediaPlayer
+                ,togglePlaylist = {playlistVisible = !playlistVisible}
+                ,togglePlaylistFalse = {playlistVisible = false}
+            );
+        }
     }
 }
 
