@@ -4,62 +4,6 @@
   "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
   "entities": [
     {
-      "id": "1:35650841262291883",
-      "lastPropertyId": "9:4751163119126055203",
-      "name": "VideoModel",
-      "properties": [
-        {
-          "id": "1:297861288261012445",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:2878157445052041948",
-          "name": "name",
-          "type": 9
-        },
-        {
-          "id": "3:4926763854308260996",
-          "name": "duration",
-          "type": 5
-        },
-        {
-          "id": "4:6619227922899242719",
-          "name": "size",
-          "type": 6
-        },
-        {
-          "id": "5:2781493398789641412",
-          "name": "uri",
-          "type": 9
-        },
-        {
-          "id": "6:1980664854939816171",
-          "name": "path",
-          "type": 9
-        },
-        {
-          "id": "7:6445803140653964401",
-          "name": "folder",
-          "type": 9
-        },
-        {
-          "id": "8:4488554084550422337",
-          "name": "Time",
-          "type": 7
-        },
-        {
-          "id": "9:4751163119126055203",
-          "name": "VideoId",
-          "indexId": "1:7706582163619369865",
-          "type": 6,
-          "flags": 32808
-        }
-      ],
-      "relations": []
-    },
-    {
       "id": "2:6885792917119486705",
       "lastPropertyId": "3:576253166449583300",
       "name": "lastPlayed",
@@ -84,17 +28,91 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "3:5329358537641479886",
+      "lastPropertyId": "5:7522756939716941479",
+      "name": "VideoModels",
+      "properties": [
+        {
+          "id": "1:4688821283656066929",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1445655058698825800",
+          "name": "VideoId",
+          "indexId": "3:1870557701382097766",
+          "type": 6,
+          "flags": 40
+        },
+        {
+          "id": "3:5353476985136211570",
+          "name": "Time",
+          "type": 7
+        },
+        {
+          "id": "4:3145616781163282015",
+          "name": "isFinished",
+          "type": 1
+        },
+        {
+          "id": "5:7522756939716941479",
+          "name": "isNew",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:4009854156861604568",
+      "lastPropertyId": "3:4084975320307544248",
+      "name": "Setting",
+      "properties": [
+        {
+          "id": "1:7350874010184865991",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:319056623191694458",
+          "name": "Sort",
+          "type": 5
+        },
+        {
+          "id": "3:4084975320307544248",
+          "name": "UiMode",
+          "type": 1
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "2:6885792917119486705",
-  "lastIndexId": "2:3336828202568748399",
+  "lastEntityId": "4:4009854156861604568",
+  "lastIndexId": "3:1870557701382097766",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
   "modelVersionParserMinimum": 5,
-  "retiredEntityUids": [],
-  "retiredIndexUids": [],
-  "retiredPropertyUids": [],
+  "retiredEntityUids": [
+    35650841262291883
+  ],
+  "retiredIndexUids": [
+    7706582163619369865
+  ],
+  "retiredPropertyUids": [
+    297861288261012445,
+    2878157445052041948,
+    4926763854308260996,
+    6619227922899242719,
+    2781493398789641412,
+    1980664854939816171,
+    6445803140653964401,
+    4488554084550422337,
+    4751163119126055203
+  ],
   "retiredRelationUids": [],
   "version": 1
 }

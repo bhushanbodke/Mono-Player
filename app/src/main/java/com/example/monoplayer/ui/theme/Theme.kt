@@ -12,34 +12,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
+// Define your custom colors if not already defined
+// Your specific colors
+val fairywhite = Color(0xFFEDF1F4)
+val customDark = Color(0xFF212226)
+
+
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = Color(0xFF7DBEDC),
+    secondary = Color(0xFF25517B),
+    tertiary = Purple80,
+    surface = customDark,      // Dark background
+    onPrimary = fairywhite,    // Light text
+    onSurface = fairywhite,
+    background = Color(0xFF323634)
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Color(0xFF7DBEDC),
     secondary = Color(0xFF25517B),
-    tertiary = Purple80,
-    surface = Color(0xFF212226),
-    onPrimary = fairywhite,
-    onSecondary = Color(0xFF),
-    onTertiary = fairywhite,
-    /* Other default colors to override
-   onBackground = Color(0xFF1C1B1F),
-   onSurface = Color(0xFF1C1B1F),
-   */
+    tertiary = Purple40,
+    surface = fairywhite,      // Light background (Reverted)
+    onPrimary = customDark,    // Dark text (Reverted)
+    onSurface = customDark     // Ensures text on background is dark
 )
 
 @Composable
 fun MonoPlayerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = LightColorScheme
+    // This picks the scheme based on the boolean
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,

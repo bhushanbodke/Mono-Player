@@ -17,22 +17,20 @@ data class lastPlayed(
 )
 
 @Entity
-data class VideoModel(
+data class Setting(
     @Id var id: Long = 0,
-    @Unique(onConflict = ConflictStrategy.REPLACE)
+    var Sort: Int = 0,
+    var UiMode: Boolean = false,
+)
+
+
+@Entity
+data class VideoModels(
+    @Id var id: Long = 0,
+    @Unique
     var VideoId: Long = 0,
-    var name: String = "",
-    var duration: Int = 0,
-    var size: Long = 0,
-    var uri: String = "",
-    var path: String = "",
-    var folder: String = "",
-    var Time: Float = 0f
-) {
-    // Optional: automatically set folder if not provided
-    init {
-        if (folder.isEmpty() && path.isNotEmpty()) {
-            folder = File(path).parentFile?.name ?: "Internal Storage"
-        }
-    }
-}
+    var Time: Float = 0f,
+    var isFinished:Boolean = false,
+    var isNew:Boolean = true,
+)
+

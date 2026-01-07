@@ -2,13 +2,17 @@ package com.example.monoplayer
 
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,8 +22,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,9 +37,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -41,18 +52,17 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun HomeScreen(vm:MyViewModel) {
     val screen by vm.screen.collectAsState();
-    val title by vm.titlePath.collectAsState();
-    val context = LocalContext.current
-    LaunchedEffect(Unit) {
-        if (vm.AllFiles.value.isEmpty())
-        {
-            Log.e("folders","requested data ")
-            ListVideos(context,vm)
-        }
+    var currentPath = vm.titlePath.collectAsState();
+
+    val title = if (screen == Screens.Home) {
+        "Internal Storage/"
+    } else {
+        currentPath.value
     }
-    Box(Modifier.fillMaxSize()) {
+
+    Box(Modifier.fillMaxSize().padding(10.dp)) {
     Column(Modifier.fillMaxSize()) {
-        Spacer(modifier = Modifier.size(10.dp))
+        Spacer(modifier = Modifier.size(20.dp))
         Box(
             Modifier
                 .padding(10.dp, top = 5.dp, end = 10.dp).height(40.dp)
@@ -78,6 +88,8 @@ fun HomeScreen(vm:MyViewModel) {
             }
         }
         Spacer(modifier = Modifier.size(5.dp))
+
+
         AnimatedContent(
             targetState = screen,
             transitionSpec = {
@@ -95,27 +107,34 @@ fun HomeScreen(vm:MyViewModel) {
         ) { targetScreen ->
             // This is where your logic goes
             when (targetScreen) {
-                Screens.Home ->  videosPermission(vm)
+                Screens.Home ->  videos(vm)
                 Screens.Videos ->  FolderScreen(vm)
-                else -> videosPermission(vm)
+                else -> videos(vm)
             }
         }
     }
-        Icon(
-            painter = painterResource(id = R.drawable.twotone_play_circle_24),
-            contentDescription = "play",
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.align(Alignment.BottomEnd)
-                .size(110.dp)
-                .padding(bottom = 40.dp, end = 30.dp).clickable {
-                    if(vm.lastPlayedFolder.value.find { it.folder == title } != null) {
-                    vm.updateCurrentVideo(vm.lastPlayedFolder.value.find { it.folder == title }!!.lastVideoId)
-                    }
-                    if (screen != Screens.VideoPlayer) {
+        Box(
+            Modifier.align(Alignment.BottomEnd).padding(bottom = 25.dp, end = 20.dp).clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable {
+                    var id = 0L;
+                    id = vm.lastPlayedFolder.value.find { it.folder == title }?.lastVideoId?:0L
+                    if (id != 0L) {
+                        val video = vm.AllFiles.value.find { it.VideoId == id };
+                        if(video!=null)vm.updateCurrentVideo(video)
                         vm.setScreen(Screens.VideoPlayer)
                     }
-                })
-
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable._767328470870_removebg_preview),
+                contentDescription = "play",
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier
+                    .size(65.dp)
+                    )
+        }
     }
 }
 

@@ -1,20 +1,72 @@
 package com.example.monoplayer
 
+import android.app.Activity
+import android.app.RecoverableSecurityException
 import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
-import android.util.Log
+import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import org.videolan.libvlc.Media
+import org.videolan.libvlc.MediaPlayer
 
+data class VideoModel(
+    var VideoId: Long = 0,
+    var name: String = "",
+    var duration: Int = 0,
+    var size: Long = 0,
+    var uri: String = "",
+    var path: String = "",
+    var folder: String = "",
+    var Time: Float = 0f,
+    var DateAdded:Float = 0f,
+    var isFinished:Boolean = false,
+    var isNew:Boolean = false,
+    var Width:Int = 0,
+    var Height:Int = 0
+)
 
-fun ListVideos(context: Context,vm:MyViewModel){
+fun ListVideos(context: Context, vm:MyViewModel):List<VideoModel>{
     var videoList = mutableListOf<VideoModel>()
     val projection = arrayOf(
         MediaStore.Video.Media._ID,
         MediaStore.Video.Media.DISPLAY_NAME,
         MediaStore.Video.Media.DURATION,
         MediaStore.Video.Media.SIZE,
-        MediaStore.Video.Media.DATA
+        MediaStore.Video.Media.DATA,
+        MediaStore.Video.Media.DATE_ADDED,
+        MediaStore.Video.Media.WIDTH,
+        MediaStore.Video.Media.HEIGHT,
     )
     val query = context.contentResolver.query(
         MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
@@ -29,6 +81,11 @@ fun ListVideos(context: Context,vm:MyViewModel){
         val durationCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION)
         val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.SIZE)
         val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA)
+        val dateCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_ADDED)
+        val widthCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.WIDTH)
+        val heightCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.HEIGHT)
+
+
 
         while (cursor.moveToNext()) {
             val id = cursor.getLong(idCol)
@@ -39,22 +96,33 @@ fun ListVideos(context: Context,vm:MyViewModel){
 
             videoList.add(
                 VideoModel(
-                    id = 0 ,
                     VideoId = id,
                     name = cursor.getString(nameCol),
                     duration = cursor.getInt(durationCol),
                     size = cursor.getLong(sizeCol),
                     uri = contentUri.toString(),
                     path = cursor.getString(dataCol),
-                    Time = 0f
+                    Time = 0f,
+                    DateAdded = cursor.getFloat(dateCol),
+                    isFinished = false,
+                    isNew = IsNew(cursor.getLong(dateCol)),
+                    Width = cursor.getInt(widthCol),
+                    Height = cursor.getInt(heightCol)
                 )
             )
         }
     }
-    vm.updateMap(videoList);
-
+    return videoList;
 }
 
+
+fun IsNew(time:Long):Boolean{
+    val currentTimeMillis = System.currentTimeMillis();
+    val timeDifference = currentTimeMillis - time*1000L;
+    val limit = 48 * 60 * 60 * 1000L
+    val isNew = (timeDifference) < limit
+    return isNew
+}
 
 fun formatFileSize(sizeInBytes: Long): String {
     if (sizeInBytes <= 0) return "0 B"
@@ -76,5 +144,93 @@ fun formatDuration(durationMs: Int): String {
         String.format("%02dhr %02dmin  %02ds", hours, minutes, seconds)
     } else {
         String.format("%02dmin %02ds", minutes, seconds)
+    }
+}
+
+@Composable
+fun CustomScrollIndicatorLazyColumn(
+    listState: LazyListState
+)
+{
+    var trackHeightPx by remember { mutableIntStateOf(0) }
+
+    // 1. Detect if scrolling is happening
+    val isScrolling = listState.isScrollInProgress
+
+    // 2. Smoothly animate the alpha (0f is invisible, 1f is visible)
+    val alpha by animateFloatAsState(
+        targetValue = if (isScrolling) 1f else 0f,
+        animationSpec = tween (durationMillis = 500), // Fades out over half a second
+        label = "PillAlpha"
+    )
+
+    val scrollProgress by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val visibleItems = layoutInfo.visibleItemsInfo
+            if (visibleItems.isEmpty() || layoutInfo.totalItemsCount <= visibleItems.size) {
+                return@derivedStateOf 0f
+            }
+            val firstItem = visibleItems.first()
+            val totalItems = layoutInfo.totalItemsCount
+            val percentageOfFirstItem = listState.firstVisibleItemScrollOffset.toFloat() / firstItem.size
+            val preciseIndex = listState.firstVisibleItemIndex.toFloat() + percentageOfFirstItem
+            (preciseIndex / (totalItems - layoutInfo.visibleItemsInfo.size)).coerceIn(0f, 1f)
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Custom scrollbar Track
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(6.dp)
+                .align(Alignment.CenterEnd)
+                .padding(vertical = 12.dp)
+                .graphicsLayer { this.alpha = alpha } // 3. Apply the animated alpha here
+                .onGloballyPositioned { trackHeightPx = it.size.height }
+        ) {
+            val thumbHeight = 40.dp
+            val thumbHeightPx = with(LocalDensity.current) { thumbHeight.toPx() }
+            val offsetY = ((trackHeightPx - thumbHeightPx) * scrollProgress).toInt()
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(thumbHeight)
+                    .offset { IntOffset(x = 0, y = offsetY) }
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+            )
+        }
+    }
+}
+
+fun deleteMediaByUri(
+    context: Context,
+    uri: Uri,
+    launcher: ManagedActivityResultLauncher<IntentSenderRequest, ActivityResult>
+) {
+    val contentResolver = context.contentResolver
+
+    try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11+ : Request permission to delete
+            val pendingIntent = MediaStore.createDeleteRequest(contentResolver, listOf(uri))
+            val request = IntentSenderRequest.Builder(pendingIntent.intentSender).build()
+            launcher.launch(request)
+        } else {
+            // Android 10 and below : Try direct delete
+            try {
+                contentResolver.delete(uri, null, null)
+            } catch (e: SecurityException) {
+                // Handle Android 10 specifically if it throws a security error
+                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q && e is RecoverableSecurityException) {
+                    val request = IntentSenderRequest.Builder(e.userAction.actionIntent.intentSender).build()
+                    launcher.launch(request)
+                }
+            }
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
     }
 }
