@@ -1,0 +1,323 @@
+package com.example.monoplayer
+
+
+import android.app.Application
+import android.content.Context
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import io.objectbox.Box
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.videolan.libvlc.LibVLC
+import org.videolan.libvlc.Media
+import org.videolan.libvlc.MediaPlayer
+import java.io.File
+import kotlin.collections.mapOf
+
+
+enum class display{
+    none,
+    playlist,
+    control,
+    lock,
+    subtitles,
+    audioSelector
+}
+
+data class FolderModel(
+    val name: String,
+    val path: String,
+    val videoCount: Int,
+    val totalSize: String,
+    val previewThumbnails: List<VideoModel> // Store paths of first 4 videos here
+)
+enum class appsort(val id: Int, val displayName: String){
+    nameAsc(0,"File name (A to Z)"),
+    nameDsc(1,"File name (Z to A)"),
+    sizeAsc(2,"Size (smallest first)"),
+    sizeDsc(3,"Size (largest first)"),
+    dateAsc(4,"Date (oldest first)"),
+    dateDsc(5,"Date (newest first)"),
+    new(6,"New (newest first)")
+}
+
+enum class Screens{
+    Home,
+    Videos,
+    VideoPlayer,
+    permissions,
+    settings
+
+}
+class MyViewModel(application: Application) : AndroidViewModel(application) {
+    val userBox: Box<VideoModel> = MyApp.boxStore.boxFor(VideoModel::class.java)
+    val lastPlayedBox: Box<lastPlayed> = MyApp.boxStore.boxFor(lastPlayed::class.java)
+    val settingBox: Box<Setting> = MyApp.boxStore.boxFor(Setting::class.java)
+
+    val lastPlayedFolder = MutableStateFlow<List<lastPlayed>>(lastPlayedBox.all)
+    val titlePath = MutableStateFlow("Internal Storage/")
+    var AllFiles = MutableStateFlow<List<VideoModel>>(userBox.all);
+    var currentVideo = MutableStateFlow<VideoModel?>(null);
+    val foldersList = MutableStateFlow<List<FolderModel>>(listOf())
+    val subScale = MutableStateFlow(1.0f)
+    val isPip = MutableStateFlow(false)
+    val isRefreshing = MutableStateFlow(false)
+    val IsOrientLocked = MutableStateFlow(true);
+
+
+
+
+
+    val settings  = MutableStateFlow(settingBox.all.firstOrNull()?:Setting())
+    val sort = MutableStateFlow(settings.value.Sort)
+    val GridValue = MutableStateFlow(settings.value.GridValue)
+    val isLightMode = MutableStateFlow(settings.value.UiModeLight);
+    val lastOrientation = MutableStateFlow(settings.value.lastOrient);
+    val WavyBar = MutableStateFlow(settings.value.WavyBar)
+
+
+    val downloadedSubs = MutableStateFlow<MutableList<SubtitleFile>>(mutableListOf())
+
+    fun saveAllSettings() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val currentSettings = settings.value
+                if (currentSettings.id == 0L) {
+                    val existing = settingBox.all.firstOrNull()
+                    if (existing != null) currentSettings.id = existing.id
+                }
+                settingBox.put(currentSettings)
+                Log.d("STORAGE", "Settings saved successfully on exit")
+            } catch (e: Exception) {
+                Log.e("STORAGE", "Failed to save settings: ${e.message}")
+            }
+        }
+    }
+    private fun updateSettings(update: (Setting) -> Setting) {
+        settings.value = update(settings.value)
+    }
+    fun toggleLightMode(){
+        isLightMode.value = !isLightMode.value;
+        updateSettings { it.copy(UiModeLight = !it.UiModeLight) }
+    }
+    fun saveLastOrientation(value: Int) {
+        lastOrientation.value = value;
+        updateSettings { it.copy(lastOrient = value) }
+    }
+    fun toggleGrid() {
+        val newGrid = when(settings.value.GridValue) {
+            1 -> 2
+            2 -> 3
+            else -> 1
+        }
+        GridValue.value =newGrid;
+        updateSettings { it.copy(GridValue = newGrid) }
+    }
+    fun toggleWavy() {
+        WavyBar.value = !WavyBar.value
+        updateSettings { it.copy(WavyBar = !it.WavyBar) }
+    }
+    fun updateSort(newSort: Int) {
+        sort.value = newSort
+        updateSettings { it.copy(Sort = newSort) }
+    }
+
+    fun UpdateLastPlayed(folder: String, id: Long) {
+        lastPlayedBox.put(lastPlayed(0, folder = folder, lastVideoId = id))
+        lastPlayedBox.put(lastPlayed(0, folder = "Internal Storage/", lastVideoId = id))
+        lastPlayedFolder.value = lastPlayedBox.all;
+    }
+    fun updateCurrentVideo(video: VideoModel){
+        currentVideo.value = video
+    }
+    val screen = MutableStateFlow(Screens.Home) // initial screen
+    fun setScreen(Newscreen: Screens) {
+        screen.value = Newscreen
+    }
+    fun changeTitlePath(value: String) {
+        titlePath.value = value;
+        Get_Files();
+    }
+
+    val folderFiles = MutableStateFlow<List<VideoModel>>(listOf())
+    fun Get_Files() {
+        viewModelScope.launch {
+            folderFiles.value =
+                AllFiles.value.filter { it.path.substringBeforeLast("/") == titlePath.value };}
+        sortList(sort.value);
+    }
+
+    init {
+        viewModelScope.launch {
+            sort.collect { sort ->
+                sortList(sort)
+            }
+        }
+    }
+
+    fun sortList(sort: Int?) {
+        viewModelScope.launch {
+        if (sort == null) return@launch
+        Log.e("sorted","sorted")
+        folderFiles.value = when (sort) {
+            0 -> {folderFiles.value.sortedBy { it.name }}
+            1 -> {folderFiles.value.sortedByDescending { it.name }}
+            2 -> {folderFiles.value.sortedBy { it.size }}
+            3 -> {folderFiles.value.sortedByDescending { it.size }}
+            4 -> {folderFiles.value.sortedBy { it.DateAdded }}
+            5 -> {folderFiles.value.sortedByDescending { it.DateAdded }}
+            6 -> {folderFiles.value.sortedByDescending { it.isNew }}
+            else -> {folderFiles.value}
+            }
+        }
+    }
+
+    fun ChangeTime(id: Long, time: Float,finished:Boolean= false) {
+        val file = AllFiles.value.find { it.VideoId == id }
+        file?.Time = time
+        file?.isNew = false
+        file?.isFinished = finished
+        val entity = userBox.query().equal(VideoModel_.VideoId, id).build().findFirst()
+        if (entity != null) {
+            entity.Time = time
+            entity.isNew = false
+            entity.isFinished = finished
+            userBox.put(entity)
+        } else {
+
+        }
+    }
+
+    fun updated_folder() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val allVideos = AllFiles.value
+            val grouped = allVideos.groupBy { it.path.substringBeforeLast("/") }
+
+            val newList = grouped.map { (path, videos) ->
+                FolderModel(
+                    name = path.substringAfterLast("/"),
+                    path = path,
+                    videoCount = videos.size,
+                    totalSize = formatFileSize(videos.sumOf { it.size }),
+                    previewThumbnails = videos.take(4) // Get thumbnails here!
+                )
+            }.sortedBy { it.name }
+
+            foldersList.value = newList
+        }
+    }
+
+
+
+    fun Save_data_files() {
+        userBox.put(AllFiles.value);
+    }
+
+
+    fun refreshData() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val freshVideos = ListVideos(getApplication())
+            val savedData = userBox.all
+            val savedMap = savedData.associateBy { it.VideoId }
+            freshVideos.forEach { video ->
+                val saved = savedMap[video.VideoId]
+                if (saved != null) {
+                    // Existing file: Restore progress
+                    video.Time = saved.Time
+                    video.isFinished = saved.isFinished
+                    video.isNew = saved.isNew && video.isNew
+                    video.id = saved.id
+                } else {
+                    video.Time = 0f
+                    video.isNew = true
+                    video.isFinished = false
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                AllFiles.value = freshVideos
+                updated_folder()
+            }
+            userBox.put(freshVideos)
+        }
+    }
+
+    fun refreshDataWithLoading() {
+        viewModelScope.launch {
+            isRefreshing.value = true
+            refreshData()
+            delay(500)
+            isRefreshing.value = false
+        }
+    }
+
+    fun removeFile(videoId: Long){
+        viewModelScope.launch (Dispatchers.IO) {
+            folderFiles.value = folderFiles.value.filter { it.VideoId != videoId }
+            AllFiles.value = AllFiles.value.filter { it.VideoId != videoId }
+        }
+    }
+
+    fun searchForSubtitles(videoName: String,season:String,ep:String) {
+        if(videoName.isEmpty())return
+        viewModelScope.launch {
+            try {
+                val response = if(season!=" ") {
+                    RetrofitClient.api.getSubtitles(
+                        file_name  = videoName
+                        ,season_number  = season
+                        ,episode_number = ep
+                    )
+                }
+                else {
+                    RetrofitClient.api.getSubtitles(
+                        file_name = videoName
+                    )
+                }
+
+                Log.e("error", response.toString());
+
+                if (response.status) {
+                    // Do something with response.results (your list of subtitles)
+                    downloadedSubs.value = response.subtitles.toMutableList()
+                }
+            } catch (e: Exception) {
+                Log.e("error", e.toString());
+                e.printStackTrace()
+            }
+        }
+    }
+
+
+    fun downloadAndExtractSubtitle(url: String, context: Context) {
+        viewModelScope.launch{
+            try {
+                // 1. Define the internal directory
+                val targetFolder = File(context.filesDir, "subtitles")
+                if (!targetFolder.exists()) targetFolder.mkdirs()
+
+                val zipFile = File(targetFolder, "temp_sub.zip")
+
+                val response = FileDownloadClient.api.downloadFile(url)
+                if (response.isSuccessful) {
+                    response.body()?.let { body ->
+                        zipFile.outputStream().use { output ->
+                            body.byteStream().use { input ->
+                                input.copyTo(output)
+                            }
+                        }
+                        unzipInternal(zipFile, targetFolder)
+                        zipFile.delete()
+                        Log.d("FILES", "Subtitle saved to: ${targetFolder.absolutePath}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("FILES", "Error: ${e.message}")
+            }
+        }
+    }
+}

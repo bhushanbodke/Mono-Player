@@ -1,0 +1,192 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "2:6885792917119486705",
+      "lastPropertyId": "3:576253166449583300",
+      "name": "lastPlayed",
+      "properties": [
+        {
+          "id": "1:5026915802132256651",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5811586273325187595",
+          "name": "folder",
+          "indexId": "2:3336828202568748399",
+          "type": 9,
+          "flags": 34848
+        },
+        {
+          "id": "3:576253166449583300",
+          "name": "lastVideoId",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:4009854156861604568",
+      "lastPropertyId": "9:495206036082112640",
+      "name": "Setting",
+      "properties": [
+        {
+          "id": "1:7350874010184865991",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:319056623191694458",
+          "name": "Sort",
+          "type": 5
+        },
+        {
+          "id": "4:1476979441871819763",
+          "name": "lastOrient",
+          "type": 5
+        },
+        {
+          "id": "6:250811737859984856",
+          "name": "GridValue",
+          "type": 5
+        },
+        {
+          "id": "7:8751217157561702734",
+          "name": "GroupByFolder",
+          "type": 1
+        },
+        {
+          "id": "8:1831629677911940460",
+          "name": "WavyBar",
+          "type": 1
+        },
+        {
+          "id": "9:495206036082112640",
+          "name": "UiModeLight",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "5:6076534294741755638",
+      "lastPropertyId": "14:4697643279508173223",
+      "name": "VideoModel",
+      "properties": [
+        {
+          "id": "1:5116313161941793829",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:9014467423101990046",
+          "name": "VideoId",
+          "indexId": "4:6815218993932387196",
+          "type": 6,
+          "flags": 40
+        },
+        {
+          "id": "3:7509258297821169061",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "4:749164470020534935",
+          "name": "duration",
+          "type": 5
+        },
+        {
+          "id": "5:1109678394335837150",
+          "name": "size",
+          "type": 6
+        },
+        {
+          "id": "6:5213191894461405051",
+          "name": "uri",
+          "type": 9
+        },
+        {
+          "id": "7:3797386291895594056",
+          "name": "path",
+          "type": 9
+        },
+        {
+          "id": "8:3157457705812338004",
+          "name": "folder",
+          "type": 9
+        },
+        {
+          "id": "9:6214131612181816775",
+          "name": "Time",
+          "type": 7
+        },
+        {
+          "id": "10:7880953408437595985",
+          "name": "DateAdded",
+          "type": 7
+        },
+        {
+          "id": "11:7307006501318248230",
+          "name": "isFinished",
+          "type": 1
+        },
+        {
+          "id": "12:4374900681100874533",
+          "name": "isNew",
+          "type": 1
+        },
+        {
+          "id": "13:5686410087249638021",
+          "name": "Width",
+          "type": 5
+        },
+        {
+          "id": "14:4697643279508173223",
+          "name": "Height",
+          "type": 5
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "5:6076534294741755638",
+  "lastIndexId": "4:6815218993932387196",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [
+    35650841262291883,
+    5329358537641479886
+  ],
+  "retiredIndexUids": [
+    7706582163619369865,
+    1870557701382097766
+  ],
+  "retiredPropertyUids": [
+    297861288261012445,
+    2878157445052041948,
+    4926763854308260996,
+    6619227922899242719,
+    2781493398789641412,
+    1980664854939816171,
+    6445803140653964401,
+    4488554084550422337,
+    4751163119126055203,
+    5788502495776060494,
+    4688821283656066929,
+    1445655058698825800,
+    5353476985136211570,
+    3145616781163282015,
+    7522756939716941479,
+    4084975320307544248
+  ],
+  "retiredRelationUids": [],
+  "version": 1
+}

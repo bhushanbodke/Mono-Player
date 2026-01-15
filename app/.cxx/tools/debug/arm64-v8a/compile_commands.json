@@ -1,0 +1,7 @@
+[
+{
+  "directory": "C:/Users/Bhushan/AndroidStudioProjects/Monoplayer/app/.cxx/Debug/3v5p4v3t/arm64-v8a",
+  "command": "\"D:\\programme files\\Android\\Sdk\\ndk\\270~1.119\\TOOLCH~1\\llvm\\prebuilt\\WINDOW~1\\bin\\CLANG_~1.EXE\" --target=aarch64-none-linux-android24 --sysroot=\"D:/programme files/Android/Sdk/ndk/27.0.11902837/toolchains/llvm/prebuilt/windows-x86_64/sysroot\" -Dnative_lib_EXPORTS -IC:/Users/Bhushan/AndroidStudioProjects/Monoplayer/app/src/main/cpp/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -fno-limit-debug-info  -fPIC -o CMakeFiles\\native-lib.dir\\native-lib.cpp.o -c C:\\Users\\Bhushan\\AndroidStudioProjects\\Monoplayer\\app\\src\\main\\cpp\\native-lib.cpp",
+  "file": "C:\\Users\\Bhushan\\AndroidStudioProjects\\Monoplayer\\app\\src\\main\\cpp\\native-lib.cpp"
+}
+]

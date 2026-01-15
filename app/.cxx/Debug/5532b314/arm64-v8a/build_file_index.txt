@@ -1,0 +1,1 @@
+C:\Users\Bhushan\AndroidStudioProjects\Monoplayer\app\src\main\cpp\CMakeLists.txt

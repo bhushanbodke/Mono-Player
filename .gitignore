@@ -1,0 +1,31 @@
+# Build folders
+**/build/
+
+# Build outputs
+*.apk
+*.jks
+
+# Kotlin/Java specific
+*.class
+.gradle/
+build/
+
+# Android Studio / IntelliJ specific
+.idea/
+*.iml
+*.iws
+.project
+.settings/
+
+# Local configuration (STRICTLY IGNORE THIS)
+local.properties
+
+# Log files
+*.log
+
+# Captures / Memory Dumps
+*.hprof
+
+# OS specific
+.DS_Store
+thumbs.db
