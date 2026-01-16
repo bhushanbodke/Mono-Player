@@ -90,6 +90,8 @@ fun PlayerControls(
     var Display by remember { mutableStateOf(display.none) }
     var LockedControl by remember { mutableStateOf(false) }
     var brightness by rememberSaveable { mutableStateOf(-1f) }
+    var controlResetTrigger by remember { mutableStateOf(0) }
+    var isDragging by remember { mutableStateOf(false) }
 
 
     val activity = LocalActivity.current as MainActivity
@@ -99,15 +101,18 @@ fun PlayerControls(
 
 
 
-    LaunchedEffect(Display) {
-        when (Display) {
-            display.control, display.lock -> {
-                // Auto-hide controls or lock icon after 3 seconds
-                delay(3000)
-                Display = display.none
-            }
-            display.playlist, display.subtitles, display.audioSelector, display.none -> {
-            }
+    LaunchedEffect(Display, controlResetTrigger,isDragging) {
+        if (Display == display.control && !isDragging) {
+            delay(3000)
+            Display = display.none
+        }
+        else { }
+    }
+    val pokeControls = {
+        if (Display == display.none) {
+            Display = display.control
+        } else {
+            controlResetTrigger++
         }
     }
 
@@ -120,8 +125,8 @@ fun PlayerControls(
 
         Box(Modifier.fillMaxSize()) {
             if (!LockedControl) {
-                BrightnessVolume(mediaPlayer, activity,Display== display.control,toggleControls = {
-                    Display = if (Display == display.none) display.control else display.none
+                BrightnessVolume(vm,mediaPlayer, activity,Display== display.control,toggleControls = {
+                    Display = if (Display == display.none) display.control else display.none;pokeControls()
                 })
             } else {
                 Box(Modifier
@@ -143,14 +148,18 @@ fun PlayerControls(
                             ,{Display = display.subtitles}
                             ,{Display = display.playlist;togglePlaylist();}
                             ,toggleShow = {Display =  display.none}
-                            ,showAudioSelector = {Display = display.audioSelector})
+                            ,showAudioSelector = {Display = display.audioSelector}
+                            ,onAction = { pokeControls() }
+                            ,onDraggingChanged = { isDragging = it })
                     } else {
                         PortraitControls(vm,video,mediaPlayer,Display== display.control
                             ,{Display =display.lock;LockedControl = true}
                             ,{Display = display.subtitles}
                             ,{Display = display.playlist;togglePlaylist();}
                             ,toggleShow = {Display =  display.none}
-                            ,showAudioSelector = {Display = display.audioSelector})
+                            ,showAudioSelector = {Display = display.audioSelector}
+                            ,onAction = { pokeControls() }
+                            ,onDraggingChanged = { isDragging = it })
                         }
                     }
                 display.playlist->

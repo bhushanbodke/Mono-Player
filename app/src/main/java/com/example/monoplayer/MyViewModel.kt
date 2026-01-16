@@ -4,6 +4,7 @@ package com.example.monoplayer
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.objectbox.Box
@@ -12,11 +13,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.videolan.libvlc.LibVLC
-import org.videolan.libvlc.Media
-import org.videolan.libvlc.MediaPlayer
 import java.io.File
-import kotlin.collections.mapOf
 
 
 enum class display{
@@ -66,7 +63,8 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
     val subScale = MutableStateFlow(1.0f)
     val isPip = MutableStateFlow(false)
     val isRefreshing = MutableStateFlow(false)
-    val IsOrientLocked = MutableStateFlow(true);
+    val IsOrientLocked = MutableStateFlow(false);
+    val currentBrightness = MutableStateFlow(-1f);
 
 
 
@@ -80,7 +78,10 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
     val WavyBar = MutableStateFlow(settings.value.WavyBar)
 
 
-    val downloadedSubs = MutableStateFlow<MutableList<SubtitleFile>>(mutableListOf())
+
+    fun updateSavedBrightness(value: Float) {
+        currentBrightness.value = value
+    }
 
     fun saveAllSettings() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -262,62 +263,15 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun searchForSubtitles(videoName: String,season:String,ep:String) {
-        if(videoName.isEmpty())return
-        viewModelScope.launch {
-            try {
-                val response = if(season!=" ") {
-                    RetrofitClient.api.getSubtitles(
-                        file_name  = videoName
-                        ,season_number  = season
-                        ,episode_number = ep
-                    )
-                }
-                else {
-                    RetrofitClient.api.getSubtitles(
-                        file_name = videoName
-                    )
-                }
-
-                Log.e("error", response.toString());
-
-                if (response.status) {
-                    // Do something with response.results (your list of subtitles)
-                    downloadedSubs.value = response.subtitles.toMutableList()
-                }
-            } catch (e: Exception) {
-                Log.e("error", e.toString());
-                e.printStackTrace()
-            }
+    val downloadedSubs = MutableStateFlow<List<Pair<String, Int>>>(emptyList())
+    fun searchSubtitles(name:String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            downloadedSubs.value = SubtitleRepo.searchSubtitles("Interstellar")
         }
     }
-
-
-    fun downloadAndExtractSubtitle(url: String, context: Context) {
-        viewModelScope.launch{
-            try {
-                // 1. Define the internal directory
-                val targetFolder = File(context.filesDir, "subtitles")
-                if (!targetFolder.exists()) targetFolder.mkdirs()
-
-                val zipFile = File(targetFolder, "temp_sub.zip")
-
-                val response = FileDownloadClient.api.downloadFile(url)
-                if (response.isSuccessful) {
-                    response.body()?.let { body ->
-                        zipFile.outputStream().use { output ->
-                            body.byteStream().use { input ->
-                                input.copyTo(output)
-                            }
-                        }
-                        unzipInternal(zipFile, targetFolder)
-                        zipFile.delete()
-                        Log.d("FILES", "Subtitle saved to: ${targetFolder.absolutePath}")
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("FILES", "Error: ${e.message}")
-            }
+    fun downloadSubtitles(Id:Int,context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            SubtitleRepo.downloadFile(Id, context.cacheDir)
         }
     }
 }

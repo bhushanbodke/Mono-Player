@@ -123,7 +123,7 @@ fun VideoPlayerSettings(vm:MyViewModel){
                 .border(
                     2.dp, MaterialTheme.colorScheme.primary,
                     RoundedCornerShape(10.dp))
-                .background(if(wavyBar) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.background)
+                .background(if(wavyBar) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.background)
                 .clickable {
                     vm.toggleWavy()
                 },)
@@ -131,10 +131,10 @@ fun VideoPlayerSettings(vm:MyViewModel){
             Icon(
                 modifier = Modifier.size(70.dp),
                 painter = painterResource(id = R.drawable.airwave),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = if(wavyBar) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.primary,
                 contentDescription = "waves"
             )
-            Text(text = "Wavy",fontSize = 14.sp,color = MaterialTheme.colorScheme.onSurface)
+            Text(text = "Wavy",fontSize = 14.sp,color = if(wavyBar) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onBackground)
         }
         Spacer(Modifier.size(20.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally,
@@ -143,7 +143,7 @@ fun VideoPlayerSettings(vm:MyViewModel){
                 .border(
                     2.dp, MaterialTheme.colorScheme.primary,
                     RoundedCornerShape(10.dp))
-                .background(if(!wavyBar) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.background)
+                .background(if(!wavyBar) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.background)
                 .clickable{
                     vm.toggleWavy()
                 })
@@ -151,10 +151,10 @@ fun VideoPlayerSettings(vm:MyViewModel){
             Icon(
                 modifier = Modifier.size(70.dp),
                 painter = painterResource(id = R.drawable.slider),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = if(!wavyBar) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.primary,
                 contentDescription = "waves"
             )
-            Text(text = "straight",fontSize = 14.sp,color = MaterialTheme.colorScheme.onSurface)
+            Text(text = "straight",fontSize = 14.sp,color =if(!wavyBar) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onBackground)
         }
     }
 }

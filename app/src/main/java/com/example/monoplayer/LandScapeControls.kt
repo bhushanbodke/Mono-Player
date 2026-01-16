@@ -1,42 +1,20 @@
 package com.example.monoplayer
 
-import android.content.pm.ActivityInfo
-import android.content.res.Configuration
+import android.app.Activity
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,8 +22,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -66,261 +43,199 @@ fun LandScapeControls(
     showSubtitle: () -> Unit,
     togglePlaylist: () -> Unit,
     toggleShow: () -> Unit,
-    showAudioSelector: () -> Unit
+    showAudioSelector: () -> Unit,
+    onAction: () -> Unit,
+    onDraggingChanged: (Boolean) -> Unit
 ) {
     var isDragging by remember { mutableStateOf(false) }
     var showAspect by rememberSaveable { mutableStateOf(false) }
     var currentRatioText by remember { mutableStateOf("Default") }
-    var isPlaying by remember { mutableStateOf(true) }
+    var isPlaying by remember { mutableStateOf(mediaPlayer.isPlaying) }
     val activity = LocalActivity.current as MainActivity
 
-    LaunchedEffect(showAspect){
-        if(showAspect){delay(1000);showAspect = false}
+    LaunchedEffect(showAspect) {
+        if (showAspect) {
+            delay(1500)
+            showAspect = false
+        }
     }
 
-    Box(Modifier.fillMaxSize())
-    {
-        // --- GESTURE LAYER (Double tap sides to seek) ---
-        BrightnessVolume(mediaPlayer, activity, isControlsVisible,toggleControls = {
-           toggleShow()
-        })
-        // --- TOP TITLE BAR ---
-        Row(modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .padding(start = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ){
-            IconButton(onClick = { vm.setScreen(Screens.Videos) })
-            {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,contentDescription = "back",
-                    Modifier.size(30.dp),
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            Text(
-                text = video?.name.toString(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)
-                        )
-                    )
-                    .padding(top = 24.dp, start = 60.dp, end = 60.dp, bottom = 20.dp),
-                color = Color.White,
-                fontSize = 18.sp,
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = TextStyle(shadow = Shadow(
-                    color = Color.Black.copy(alpha = 0.6f),
-                    offset = Offset(2f, 2f),
-                    blurRadius = 4f
-                )
-                )
-            )
-        }
-        Column(Modifier.align(Alignment.CenterEnd).offset(x=(-50.dp),y=0.dp)
-            .clip(RoundedCornerShape(30.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-            .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(30.dp))
-            .padding(vertical = 5.dp)){
-            ModernOrientationButton(vm)
-            IconButton(onClick = {}) {
-                Icon(
-                    painterResource( R.drawable.headphones_24),
-                    contentDescription = "background play",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(30.dp)
-                )
-            }
-
-        }
-        if(showAspect){
+    AnimatedVisibility(
+        visible = isControlsVisible,
+        enter = fadeIn() + slideInVertically { it / 2 },
+        exit = fadeOut() + slideOutVertically { it / 2 }
+    ) {
+        Box(Modifier.fillMaxSize()) {
+            BrightnessVolume(vm,mediaPlayer, activity, isControlsVisible, toggleControls = toggleShow)
+            // --- TOP GRADIENT (Title Area) ---
             Box(
                 Modifier
-                    .size(120.dp, 60.dp) // Slightly wider for ratios like 16:9
-                    .align(Alignment.Center)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.Black.copy(alpha = 0.7f)), // Darker background for visibility
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = currentRatioText,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-        }
-        // --- BOTTOM CONTROLS ---
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Black.copy(0.7f), Color.Transparent)
+                        )
                     )
-                )
-        ) {
-            VideoProgressSlider(
-                vm,
-                mediaPlayer,
-                isDraggingExternal = isDragging,
-                onSeek = {
-                    isDragging = true
-                    mediaPlayer.position = it
-                },
-                onFinished = { isDragging = false }
             )
+            // --- TOP BAR ---
             Row(
-                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp) // More side padding for landscape
-                    .height(80.dp)
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // LEFT SECTION: Locking & Orientation
+                IconButton(
+                    onClick = { vm.setScreen(Screens.Videos) },
+                    modifier = Modifier.background(Color.Black.copy(0.3f), CircleShape)
+                ) {
+                    Icon(Icons.Default.ArrowBack, "back", tint = Color.White)
+                }
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = video?.name ?: "Unknown Video",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = TextStyle(shadow = Shadow(Color.Black, Offset(2f, 2f), 4f))
+                )
+            }
+
+            // --- RIGHT SIDE PANEL (Floaters) ---
+            Column(
+                Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 24.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.Black.copy(0.4f))
+                    .padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                ModernOrientationButton(vm)
+                IconButton(onClick = { /* BG Play logic */ }) {
+                    Icon(painterResource(R.drawable.headphones_24), null, tint = Color.White, modifier = Modifier.size(24.dp))
+                }
+            }
+
+            // --- ASPECT RATIO INDICATOR ---
+            if (showAspect) {
+                Surface(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color.Black.copy(0.8f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        currentRatioText,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 18.sp
+                    )
+                }
+            }
+
+            // --- BOTTOM SECTION ---
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(0.8f))
+                        )
+                    )
+                    .padding(bottom = 16.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ){}
+            ) {
+                VideoProgressSlider(
+                    vm, mediaPlayer, isDragging,
+                    onSeek = { isDragging = true; mediaPlayer.position = it },
+                    onFinished = { isDragging = false },
+                    onDraggingChanged = onDraggingChanged
+                )
+
                 Row(
                     modifier = Modifier
-                        .weight(1.2f)
-                        .clip(RoundedCornerShape(30.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-                        .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(30.dp))
-                        .padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Lock Button
-                    IconButton(onClick = showLock) {
-                        Icon(
-                            painter = painterResource(R.drawable.twotone_lock_24),
-                            contentDescription = "Lock Controls",
-                            modifier = Modifier.size(26.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    // LEFT PILL (Settings)
+                    ControlPill {
+                        IconButton(onClick = { showLock() ;onAction()}) {
+                            Icon(painterResource(R.drawable.twotone_lock_24), null, tint = Color.White)
+                        }
+                        IconButton(onClick = { showAudioSelector();onAction() }) {
+                            Icon(painterResource(R.drawable.baseline_music_note_24), null, tint = Color.White)
+                        }
+                        IconButton(onClick = {
+                            currentRatioText = changeAspectRatio(mediaPlayer, activity) ?: "Default"
+                            showAspect = true;
+                            onAction()
+                        }) {
+                            Icon(painterResource(R.drawable.fit_screen_24), null, tint = Color.White)
+                        }
                     }
-                    // Music/Audio Track Button
-                    IconButton(onClick = { showAudioSelector()}) {
-                        Icon(
-                            painter = painterResource(R.drawable.baseline_music_note_24),
-                            contentDescription = "Audio Tracks",
-                            modifier = Modifier.size(26.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    // Aspect Ratio Button
-                    IconButton(onClick = {
-                        val newRatio = changeAspectRatio(mediaPlayer, activity)
-                        currentRatioText = newRatio ?: "Default"
-                        showAspect = true
-                    }) {
-                        Icon(
-                            painter = painterResource(R.drawable.fit_screen_24),
-                            contentDescription = "Aspect Ratio",
-                            modifier = Modifier.size(26.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
 
-                // CENTER SECTION: Playback
-                Row(
-                    modifier = Modifier.weight(3f),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(modifier=Modifier.size(50.dp,45.dp)
-                        .clip(RoundedCornerShape(30.dp))
-                        .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(30.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(0.6f))
-                        .clickable(){ mediaPlayer.time = (mediaPlayer.time - 10000L).coerceAtLeast(0L) }
-                    ,contentAlignment = Alignment.Center) {
-                        Icon(painterResource(R.drawable.baseline_fast_rewind_24)
-                             ,modifier= Modifier.fillMaxSize()
-                            , contentDescription = null
-                            , tint = MaterialTheme.colorScheme.primary)
-                    }
-                    Spacer(modifier = Modifier.width(32.dp))
-                    Box(modifier=Modifier.size(80.dp,60.dp)
-                        .clip(RoundedCornerShape(30.dp))
-                        .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(30.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(0.6f))
-                        .clickable{
-                        isPlaying = !isPlaying
-                        if (isPlaying) mediaPlayer.play() else mediaPlayer.pause()
-                    } ,contentAlignment = Alignment.Center) {
+                    // CENTER CONTROLS (Playback)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            painter = painterResource(if (isPlaying) R.drawable.play_arrow_24 else R.drawable.pause_24),
-                            contentDescription = "null",
-                            modifier = Modifier.fillMaxSize(),
-                            tint = MaterialTheme.colorScheme.primary,
+                            painterResource(R.drawable.baseline_fast_rewind_24), null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .clickable { mediaPlayer.time -= 10000L; onAction() }
                         )
-                    }
-                    Spacer(modifier = Modifier.width(32.dp))
-                    Box(modifier=Modifier.size(50.dp,45.dp)
-                        .clip(RoundedCornerShape(30.dp))
-                        .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(30.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(0.6f))
-                        .clickable(){ mediaPlayer.time += 10000L }
-                        ,contentAlignment = Alignment.Center) {
-                        Icon(painterResource(R.drawable.baseline_fast_forward_24)
-                            , modifier= Modifier.fillMaxSize()
-                            , contentDescription = null
-                            , tint = MaterialTheme.colorScheme.primary)
-                    }
-                }
-
-                // RIGHT SECTION: Media Options
-                Row(
-                    modifier = Modifier
-                        .weight(1.2f)
-                        // 1. Unified container styling
-                        .clip(RoundedCornerShape(30.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-                        .border(
-                            width = 1.5.dp,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(30.dp)
-                        )
-                        .padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Subtitles Button
-                    IconButton(onClick = showSubtitle) {
+                        Spacer(Modifier.width(24.dp))
+                        Box(
+                            Modifier
+                                .size(72.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                .clickable {
+                                    if (isPlaying) mediaPlayer.pause() else mediaPlayer.play()
+                                    isPlaying = !isPlaying;
+                                    onAction()
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painterResource(if (isPlaying) R.drawable.pause_24 else R.drawable.play_arrow_24),
+                                null, tint = Color.Black, modifier = Modifier.size(40.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(24.dp))
                         Icon(
-                            painter = painterResource(R.drawable.twotone_subtitles_24),
-                            contentDescription = "Subtitles",
-                            modifier = Modifier.size(26.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            painterResource(R.drawable.baseline_fast_forward_24), null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .clickable { mediaPlayer.time += 10000L; onAction() }
                         )
                     }
 
-                    // PiP Button
-                    IconButton(onClick = {
-                        vm.isPip.value = true
-                        activity.enterPipMode(mediaPlayer.isPlaying)
-                    }) {
-                        Icon(
-                            painter = painterResource(R.drawable.baseline_picture_in_picture_alt_24),
-                            contentDescription = "Picture in Picture",
-                            modifier = Modifier.size(26.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    // Playlist Button
-                    IconButton(onClick = togglePlaylist) {
-                        Icon(
-                            painter = painterResource(R.drawable.playlist_play_24),
-                            contentDescription = "Playlist",
-                            modifier = Modifier.size(26.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    // RIGHT PILL (Tools)
+                    ControlPill {
+                        IconButton(onClick = { showSubtitle() ;onAction()}) {
+                            Icon(painterResource(R.drawable.twotone_subtitles_24), null, tint = Color.White)
+                        }
+                        IconButton(onClick = {
+                            vm.isPip.value = true
+                            activity.enterPipMode(mediaPlayer.isPlaying);
+                            onAction()
+                        }) {
+                            Icon(painterResource(R.drawable.baseline_picture_in_picture_alt_24), null, tint = Color.White)
+                        }
+                        IconButton(onClick = { togglePlaylist();onAction() }) {
+                            Icon(painterResource(R.drawable.playlist_play_24), null, tint = Color.White)
+                        }
                     }
                 }
             }
@@ -329,30 +244,47 @@ fun LandScapeControls(
 }
 
 @Composable
-fun ModernOrientationButton(vm: MyViewModel, modifier: Modifier = Modifier) {
+fun ControlPill(content: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White.copy(0.15f))
+            .border(1.dp, Color.White.copy(0.2f), RoundedCornerShape(24.dp))
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content
+    )
+}
+
+@Composable
+fun ModernOrientationButton(vm: MyViewModel) {
     val activity = LocalActivity.current as MainActivity
-    val isOrientLock = vm.IsOrientLocked.collectAsState()
-    IconButton (onClick = {
-        toggleOrientation(activity,isOrientLock.value,vm)
-        vm.IsOrientLocked.value = !vm.IsOrientLocked.value
-    }) {
+    val isOrientLock by vm.IsOrientLocked.collectAsState()
+    IconButton(
+        onClick = {
+            toggleOrientation(activity, isOrientLock, vm)
+            vm.IsOrientLocked.value = !isOrientLock;
+        },
+        modifier = Modifier.background(Color.White.copy(0.1f), CircleShape)
+    ) {
         Icon(
-            painterResource( if (isOrientLock.value) R.drawable.twotone_screen_lock_landscape_24 else R.drawable.twotone_screen_rotation_24),
-            contentDescription = "Orientation",
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(30.dp)
+            painterResource(if (isOrientLock) R.drawable.twotone_screen_lock_landscape_24 else R.drawable.twotone_screen_rotation_24),
+            null, tint = Color.White, modifier = Modifier.size(20.dp)
         )
     }
 }
 
 fun changeAspectRatio(mediaPlayer: MediaPlayer,activity: MainActivity): String? {
-    val screenRatio = activity.getScreenRatio()
-    val nextRatio = when (mediaPlayer.aspectRatio) {
-        null -> "16:9"
-        "16:9" -> "4:3"
-        "4:3" -> screenRatio // This is your "Fit to Screen / Fill"
-        else -> null // Back to "Default"
+    val screenRatio = activity.getScreenRatio() // e.g., 20:9
+    val screenRatioStr = "${screenRatio.first}:${screenRatio.second}"
+
+    val (nextRatio, returnString) = when (mediaPlayer.aspectRatio) {
+        null -> "16:9" to "16:9"
+        "16:9" -> "4:3" to "4:3"
+        "4:3" -> screenRatioStr to "Fit Screen"
+        screenRatioStr -> "16:10" to "16:10" // Adding more common options
+        else -> null to "Default"
     }
     mediaPlayer.aspectRatio = nextRatio
-    return if(nextRatio==screenRatio) "Fit" else nextRatio
+    return returnString
 }

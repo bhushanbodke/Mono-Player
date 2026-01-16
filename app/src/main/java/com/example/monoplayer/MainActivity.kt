@@ -91,11 +91,11 @@ class MainActivity : ComponentActivity() {
         vm.saveAllSettings();
     }
 
-    fun getScreenRatio(): String {
+    fun getScreenRatio(): Pair<Int, Int> {
         val metrics = resources.displayMetrics
         val width = maxOf(metrics.widthPixels, metrics.heightPixels)
         val height = minOf(metrics.widthPixels, metrics.heightPixels)
-        return "$width:$height"
+        return Pair(width, height)
     }
 
     override fun onPictureInPictureModeChanged(

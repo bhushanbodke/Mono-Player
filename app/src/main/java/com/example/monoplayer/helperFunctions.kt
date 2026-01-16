@@ -63,6 +63,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
 import io.objectbox.annotation.Unique
@@ -311,14 +313,19 @@ fun formatTime(ms: Long): String {
     return "%02d:%02d".format(minutes, seconds)
 }
 fun enterVideoMode(vm: MyViewModel,activity: MainActivity) {
-    activity.requestedOrientation  = when(vm.lastOrientation.value){
-        0->ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-        1->ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
-        2->ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        else->ActivityInfo.SCREEN_ORIENTATION_SENSOR
-    }
+    activity.requestedOrientation  = ActivityInfo.SCREEN_ORIENTATION_SENSOR
 }
 
 fun exitVideoMode(activity: MainActivity) {
+    val params = activity.window.attributes
+    params.screenBrightness = -1f
+    activity.window.attributes = params
+
+    // 2. Force Orientation back to Portrait
     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+
+    // 3. Show System Bars (Status bar and Nav bar)
+    WindowCompat.getInsetsController(activity.window, activity.window.decorView).show(
+        WindowInsetsCompat.Type.systemBars()
+    )
 }

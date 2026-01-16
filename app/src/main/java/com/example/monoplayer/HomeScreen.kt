@@ -1,212 +1,273 @@
 package com.example.monoplayer
 
-import android.util.Log
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(vm:MyViewModel) {
-    val screen by vm.screen.collectAsState();
-    var currentPath = vm.titlePath.collectAsState();
-    var showSettings = remember { mutableStateOf(false) }
-    var gridvalue = vm.GridValue.collectAsState();
+fun HomeScreen(vm: MyViewModel) {
+    val screen by vm.screen.collectAsState()
+    val currentPath by vm.titlePath.collectAsState()
+    var showSettings by remember { mutableStateOf(false) }
+    val gridvalue by vm.GridValue.collectAsState()
     val scrollState = rememberScrollState()
     val isRefreshing by vm.isRefreshing.collectAsState()
 
+    // Determine the path display
+    val title = if (screen == Screens.Home) "Internal Storage" else currentPath
 
-
-
-    val title = if (screen == Screens.Home) {
-        "Internal Storage/"
-    } else {
-        currentPath.value
-    }
+    // Auto-scroll breadcrumbs to the end when path changes
     LaunchedEffect(title) {
-        scrollState.scrollTo(scrollState.maxValue)
+        scrollState.animateScrollTo(scrollState.maxValue)
     }
-    Box(Modifier
-        .fillMaxSize()
-        .padding(5.dp)) {
-    Column(Modifier.fillMaxSize()) {
-        Spacer(modifier = Modifier.size(20.dp))
+
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // --- PREMIUM BREADCRUMBS ---
             Row(
-                verticalAlignment = Alignment.CenterVertically, modifier = Modifier
-                    .padding(start = 10.dp)
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                     .horizontalScroll(scrollState)
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
-            for(word in title.split("/")){
-                if(word=="") continue
-                Text(
-                    text = if(word.split(" ").size >= 3) word.split(" ").take(3).joinToString(" ")+"..." else word,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                );
-                Spacer(modifier = Modifier.size(5.dp))
-                Icon(
-                    painterResource(R.drawable.baseline_arrow_forward_ios_24)
-                    , contentDescription = "arrow"
-                    ,modifier=Modifier.size(23.dp)
-                    ,tint = MaterialTheme.colorScheme.onSurface)}
-            }
-        Row()
-        {
-            Spacer(Modifier
-                .fillMaxWidth()
-                .weight(1f))
-            IconButton(onClick = {vm.toggleGrid()}) {
-                Icon(painter =painterResource(
-                    when(gridvalue.value) {
-                        1 -> {R.drawable.view_list_24}
-                        2 -> {R.drawable.grid_view_24}
-                        else -> {R.drawable.grid_on_24}
+                val pathParts = title.split("/").filter { it.isNotEmpty()}
+                pathParts.forEachIndexed { index, word ->
+                    Text(
+                        text = if (word.length > 20) word.take(15) + "..." else word,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    if (index < pathParts.size - 1) {
+                        Icon(
+                            painterResource(R.drawable.baseline_arrow_forward_ios_24),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp)
+                                .size(10.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
                     }
-                )
-                    , contentDescription = "view",
-                    Modifier.size(25.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
+                }
             }
-            Box() {
-                IconButton(onClick = {showSettings.value = true}) {
+
+            // --- ACTION BAR ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (screen == Screens.Home) "Library" else vm.titlePath.value.substringAfterLast("/"),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .weight(1f),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+
+                IconButton(onClick = { vm.toggleGrid() }) {
                     Icon(
-                        painter = painterResource(R.drawable.sort_24), "sort",
-                        Modifier.size(25.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        painter = painterResource(
+                            when (gridvalue) {
+                                1 -> R.drawable.view_list_24
+                                2 -> R.drawable.grid_view_24
+                                else -> R.drawable.grid_on_24
+                            }
+                        ),
+                        contentDescription = "Toggle Grid",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                IconButton(onClick = { showSettings = true }) {
+                    Icon(
+                        painter = painterResource(R.drawable.sort_24),
+                        contentDescription = "Sort Options",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
-        }
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { vm.refreshDataWithLoading() },
-        ) {
-            AnimatedContent(
-                targetState = screen,
-                transitionSpec = {
-                    if (targetState > initialState) {
-                        (slideInHorizontally { it } + fadeIn()).togetherWith(
-                            slideOutHorizontally { -it } + fadeOut())
-                    } else {
-                        (slideInHorizontally { -it } + fadeIn()).togetherWith(
-                            slideOutHorizontally { it } + fadeOut())
-                    }
-                },
-                label = "ScreenTransition"
-            ) { targetScreen ->
-                when (targetScreen) {
-                    Screens.Home -> videos(vm)
-                    Screens.Videos -> FolderScreen(vm)
-                    else -> videos(vm)
-                }
-            }
-        }
-    }
-            IconButton(
-                modifier=Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 25.dp, end = 20.dp)
-                    .size(75.dp),
-                onClick = {
-                    var id = 0L;
-                    id = vm.lastPlayedFolder.value.find { it.folder == title }?.lastVideoId?:0L
-                    if (id != 0L) {
-                        val video = vm.AllFiles.value.find { it.VideoId == id };
-                        if(video!=null)vm.updateCurrentVideo(video)
-                        vm.setScreen(Screens.VideoPlayer)
-                    }
-                }
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.twotone_play_circle_24),
-                    contentDescription = "play",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .fillMaxSize()
-                )
-            }
 
-        AnimatedVisibility(visible = showSettings.value,
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-        ){
-            sortScreen(vm,{ showSettings.value = false })
+            // --- CONTENT AREA ---
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { vm.refreshDataWithLoading() },
+                modifier = Modifier.weight(1f)
+            ) {
+                AnimatedContent(
+                    targetState = screen,
+                    transitionSpec = {
+                        if (targetState > initialState) {
+                            (slideInHorizontally { it } + fadeIn()).togetherWith(
+                                slideOutHorizontally { -it } + fadeOut()
+                            )
+                        } else {
+                            (slideInHorizontally { -it } + fadeIn()).togetherWith(
+                                slideOutHorizontally { it } + fadeOut()
+                            )
+                        }
+                    },
+                    label = "ScreenTransition"
+                ) { targetScreen ->
+                    when (targetScreen) {
+                        Screens.Home -> videos(vm) // Displaying Folders
+                        Screens.Videos -> FolderScreen(vm) // Displaying specific Videos
+                        else -> videos(vm)
+                    }
+                }
+            }
+        }
+
+        // --- RESUME FAB ---
+        ExtendedFloatingActionButton(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp),
+            onClick = {
+                val searchPath = if (screen == Screens.Home) "Internal Storage/" else title
+                val folderData = vm.lastPlayedFolder.value.find { it.folder == searchPath }
+                folderData?.lastVideoId?.let { id ->
+                    vm.AllFiles.value.find { it.VideoId == id }?.let { video ->
+                        vm.updateCurrentVideo(video)
+                        vm.setScreen(Screens.VideoPlayer)
+                            }
+                        }
+                      },
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            elevation = FloatingActionButtonDefaults.elevation(8.dp),
+            shape = RoundedCornerShape(16.dp),
+            icon = { Icon(painterResource(R.drawable.twotone_play_circle_24), null, Modifier.size(28.dp)) },
+            text = { Text("Resume", fontWeight = FontWeight.Bold) }
+        )
+
+        // --- SORT BOTTOM SHEET OVERLAY ---
+        AnimatedVisibility(
+            visible = showSettings,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+        ) {
+            SortSheetOverlay(vm) { showSettings = false }
         }
     }
 }
 
-
-
-
 @Composable
-fun sortScreen(vm:MyViewModel,hide:()->Unit){
-    var sort = vm.sort.collectAsState();
-    Box(Modifier.fillMaxSize().clickable(interactionSource = remember { MutableInteractionSource() },indication = null){
-        hide();
-    }){
-        Box(Modifier.fillMaxWidth().height(430.dp).clip(RoundedCornerShape(10.dp)).align(Alignment.BottomCenter).background(MaterialTheme.colorScheme.background).padding(20.dp)) {
-            Column() {
-                Text(text = "SORT BY" , color = MaterialTheme.colorScheme.primary , fontSize = 20.sp)
-                Spacer(modifier = Modifier.size(5.dp))
-                for (s in appsort.values()) {
-                    val isSelected = sort.value == s.id
-                    Row(verticalAlignment = Alignment.CenterVertically,modifier = Modifier.fillMaxWidth().padding(10.dp).clickable
-                        (interactionSource = remember { MutableInteractionSource() },indication = null)
-                    {
-                        vm.updateSort(s.id)
-                        hide()
-                    }){
-                        Text(text = s.displayName,modifier = Modifier.weight(1f), color = if (isSelected) MaterialTheme.colorScheme.primary else Color.White, fontSize = 15.sp,)
-                        if(isSelected)Icon(imageVector = Icons.Default.Check ,tint = MaterialTheme.colorScheme.primary, contentDescription = "check",)
+fun SortSheetOverlay(vm: MyViewModel, onHide: () -> Unit) {
+    val currentSort by vm.sort.collectAsState()
+
+    // Scrim background
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onHide() }
+    ) {
+        // Bottom Sheet Content
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter),
+            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .navigationBarsPadding()
+            ) {
+                // Drag Handle
+                Box(
+                    Modifier
+                        .size(40.dp, 4.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                        .align(Alignment.CenterHorizontally)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Sort Videos By",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Sort Options List
+                appsort.values().forEach { option ->
+                    val isSelected = currentSort == option.id
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                else Color.Transparent
+                            )
+                            .clickable {
+                                vm.updateSort(option.id)
+                                onHide()
+                            }
+                            .padding(16.dp)
+                    ) {
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = option.displayName,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                tint = MaterialTheme.colorScheme.primary,
+                                contentDescription = "Selected"
+                            )
+                        }
                     }
                 }
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }

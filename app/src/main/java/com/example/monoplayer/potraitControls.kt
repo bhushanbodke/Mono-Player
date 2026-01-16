@@ -1,35 +1,19 @@
 package com.example.monoplayer
 
-
-
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import org.videolan.libvlc.MediaPlayer
+
 @Composable
 fun PortraitControls(
     vm: MyViewModel,
@@ -56,196 +41,188 @@ fun PortraitControls(
     showSubtitle: () -> Unit,
     togglePlaylist: () -> Unit,
     toggleShow: () -> Unit,
-    showAudioSelector: () -> Unit
+    showAudioSelector: () -> Unit,
+    onAction: () -> Unit,
+    onDraggingChanged: (Boolean) -> Unit
 ) {
     var isDragging by remember { mutableStateOf(false) }
-    var isPlaying by remember { mutableStateOf(true) }
+    var isPlaying by remember { mutableStateOf(mediaPlayer.isPlaying) }
     var showAspect by rememberSaveable { mutableStateOf(false) }
     var currentRatioText by remember { mutableStateOf("Default") }
     val activity = LocalActivity.current as MainActivity
 
-    // Aspect Ratio Indicator Auto-hide
-    LaunchedEffect (showAspect) {
+    LaunchedEffect(showAspect) {
         if (showAspect) {
-            delay(1000)
+            delay(1200)
             showAspect = false
         }
     }
 
     Box(Modifier.fillMaxSize()) {
         // --- GESTURE LAYER ---
-        BrightnessVolume(mediaPlayer, activity, isControlsVisible, toggleControls = {
-            toggleShow()
-        })
+        BrightnessVolume(vm,mediaPlayer, activity, isControlsVisible, toggleControls = toggleShow)
 
-        // --- TOP TITLE BAR ---
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)
-                    )
-                )
-                .padding(top = 40.dp, start = 10.dp, end = 10.dp, bottom = 20.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // --- TOP BAR (Animated) ---
+        AnimatedVisibility(
+            visible = isControlsVisible,
+            enter = slideInVertically { -it } + fadeIn(),
+            exit = slideOutVertically { -it } + fadeOut()
         ) {
-            IconButton(onClick = { vm.setScreen(Screens.Videos) }) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "back",
-                    modifier = Modifier.size(30.dp),
-                    tint = Color.White
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Brush.verticalGradient(listOf(Color.Black.copy(0.7f), Color.Transparent)))
+                    .padding(top = 48.dp, start = 12.dp, end = 12.dp, bottom = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { vm.setScreen(Screens.Videos) },
+                    modifier = Modifier.background(Color.White.copy(0.1f), CircleShape)
+                ) {
+                    Icon(Icons.Default.ArrowBack, "back", tint = Color.White)
+                }
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = video?.name ?: "Unknown Video",
+                    modifier = Modifier.weight(1f),
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    style = TextStyle(shadow = Shadow(Color.Black, Offset(2f, 2f), 4f))
                 )
             }
-            Text(
-                text = video?.name ?: "Unknown Video",
-                modifier = Modifier.weight(1f),
-                color = Color.White,
-                fontSize = 18.sp,
-                textAlign = TextAlign.Start,
-                fontWeight = FontWeight.Medium,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                style = TextStyle(shadow = Shadow(Color.Black.copy(0.6f), Offset(2f, 2f), 4f))
-            )
         }
 
         // --- ASPECT RATIO INDICATOR ---
         if (showAspect) {
-            Box(
-                Modifier
-                    .size(120.dp, 60.dp)
-                    .align(Alignment.Center)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.Black.copy(alpha = 0.7f)),
-                contentAlignment = Alignment.Center
+            Surface(
+                modifier = Modifier.align(Alignment.Center),
+                color = Color.Black.copy(0.8f),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text(text = currentRatioText, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(
+                    currentRatioText,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 18.sp
+                )
             }
         }
 
-        // --- BOTTOM CONTROLS ---
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))
-                    )
-                )
-                .padding(bottom = 32.dp)
+        // --- BOTTOM CONTROLS (Animated) ---
+        AnimatedVisibility(
+            visible = isControlsVisible,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = slideInVertically { it } + fadeIn(),
+            exit = slideOutVertically { it } + fadeOut()
         ) {
-            VideoProgressSlider(
-                vm, mediaPlayer,
-                isDraggingExternal = isDragging,
-                onSeek = { isDragging = true; mediaPlayer.position = it },
-                onFinished = { isDragging = false }
-            )
-
-            // CENTER SECTION: Playback Pill
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.8f))))
+                    .padding(bottom = 32.dp, top = 20.dp)
             ) {
+                VideoProgressSlider(
+                    vm, mediaPlayer, isDragging,
+                    onSeek = { isDragging = true; mediaPlayer.position = it },
+                    onFinished = { isDragging = false },onDraggingChanged
+                )
+
+                // MAIN PLAYBACK ROW
                 Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(35.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-                        .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(35.dp))
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = { mediaPlayer.time = (mediaPlayer.time - 10000L).coerceAtLeast(0L) }) {
-                        Icon(painterResource(R.drawable.baseline_fast_rewind_24), null, Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary)
-                    }
-                    Spacer(Modifier.width(20.dp))
-                    IconButton(onClick = {
-                        isPlaying = !isPlaying
-                        if (isPlaying) mediaPlayer.play() else mediaPlayer.pause()
-                    }) {
+                    Icon(
+                        painterResource(R.drawable.baseline_fast_rewind_24), null,
+                        Modifier.size(36.dp).clickable { mediaPlayer.time -= 10000L },
+                        tint = Color.White
+                    )
+
+                    Spacer(Modifier.width(32.dp))
+
+                    Box(
+                        Modifier
+                            .size(72.dp)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                            .clickable {
+                                if (isPlaying) mediaPlayer.pause() else mediaPlayer.play()
+                                isPlaying = !isPlaying
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
                             painter = painterResource(if (isPlaying) R.drawable.pause_24 else R.drawable.play_arrow_24),
-                            null, modifier = Modifier.size(45.dp), tint = MaterialTheme.colorScheme.primary
+                            null, Modifier.size(40.dp), tint = Color.Black
                         )
                     }
-                    Spacer(Modifier.width(20.dp))
-                    IconButton(onClick = { mediaPlayer.time += 10000L }) {
-                        Icon(painterResource(R.drawable.baseline_fast_forward_24), null, Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            }
 
-            // UTILITY SECTION: Bottom Row Pills
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Left Utilities Pill
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(30.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-                        .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(30.dp))
-                        .padding(horizontal = 8.dp)
-                ) {
-                    IconButton(onClick = showLock) {
-                        Icon(painterResource(R.drawable.twotone_lock_24), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
-                    }
-                    IconButton(onClick = {
-                        val newRatio = changeAspectRatio(mediaPlayer, activity)
-                        currentRatioText = newRatio ?: "Default"
-                        showAspect = true
-                    }) {
-                        Icon(painterResource(R.drawable.fit_screen_24), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
-                    }
+                    Spacer(Modifier.width(32.dp))
+
+                    Icon(
+                        painterResource(R.drawable.baseline_fast_forward_24), null,
+                        Modifier.size(36.dp).clickable { mediaPlayer.time += 10000L },
+                        tint = Color.White
+                    )
                 }
 
-                // Orientation & Headphones Pill
+                // UTILITY BAR (Floating Pills)
                 Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(30.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-                        .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(30.dp))
-                        .padding(horizontal = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    ModernOrientationButton(vm)
-                    IconButton(onClick = {}) {
-                        Icon(painterResource(R.drawable.headphones_24), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                    PortraitUtilityPill {
+                        IconButton(onClick = showLock) {
+                            Icon(painterResource(R.drawable.twotone_lock_24), null, tint = Color.White)
+                        }
+                        IconButton(onClick = {
+                            currentRatioText = changeAspectRatio(mediaPlayer, activity) ?: "Default"
+                            showAspect = true
+                        }) {
+                            Icon(painterResource(R.drawable.fit_screen_24), null, tint = Color.White)
+                        }
                     }
-                }
 
-                // Right Media Pill
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(30.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-                        .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(30.dp))
-                        .padding(horizontal = 8.dp)
-                ) {
-                    IconButton(onClick = showSubtitle) {
-                        Icon(painterResource(R.drawable.twotone_subtitles_24), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                    PortraitUtilityPill {
+                        ModernOrientationButton(vm)
+                        IconButton(onClick = { /* BG Play logic */ }) {
+                            Icon(painterResource(R.drawable.headphones_24), null, tint = Color.White)
+                        }
                     }
-                    IconButton(onClick = {
-                        vm.isPip.value = true
-                        activity.enterPipMode(mediaPlayer.isPlaying)
-                    }) {
-                        Icon(painterResource(R.drawable.baseline_picture_in_picture_alt_24), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
-                    }
-                    IconButton(onClick = togglePlaylist) {
-                        Icon(painterResource(R.drawable.playlist_play_24), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+
+                    PortraitUtilityPill {
+                        IconButton(onClick = showSubtitle) {
+                            Icon(painterResource(R.drawable.twotone_subtitles_24), null, tint = Color.White)
+                        }
+                        IconButton(onClick = {
+                            vm.isPip.value = true
+                            activity.enterPipMode(mediaPlayer.isPlaying)
+                        }) {
+                            Icon(painterResource(R.drawable.baseline_picture_in_picture_alt_24), null, tint = Color.White)
+                        }
+                        IconButton(onClick = togglePlaylist) {
+                            Icon(painterResource(R.drawable.playlist_play_24), null, tint = Color.White)
+                        }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+fun PortraitUtilityPill(content: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White.copy(0.12f))
+            .border(1.dp, Color.White.copy(0.1f), RoundedCornerShape(24.dp)),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content
+    )
 }

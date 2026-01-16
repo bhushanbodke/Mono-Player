@@ -24,31 +24,28 @@ import androidx.compose.runtime.setValue
 val fairywhite = Color(0xFFEDF1F4)
 val customDark = Color(0xFF212226)
 
+
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF7DBEDC),        // Soft sky blue (brand color)
-    secondary = Color(0xFF25517B),      // Deep blue
-    background = Color(0xFF2B2F2D),     // Slightly darker, cleaner base
-    surface = Color(0xFF323634),        // Elevated surface
-    onPrimary = Color(0xFF0E2A38),      // Dark text on light blue
-    onSecondary = Color(0xFFEAF4FA),    // Light text on dark blue
-    tertiary = Color(0xFF4FA3B8),     // Cool teal-blue accent
-    onTertiary = Color(0xFF082A33) ,  // Dark text on tertiary
-    onBackground = Color(0xFFE7ECEA),   // Soft white (not pure white)
-    onSurface = Color(0xFFE7ECEA)
+    primary = Color(0xFF7DBEDC),
+    secondary = Color(0xFF4FA3B8),     // Teal blue accent
+    background = Color(0xFF1A1C1E),    // Deeper, darker background
+    surface = Color(0xFF232629),       // Lighter surface for cards
+    onPrimary = Color(0xFF003544),
+    onSurface = Color(0xFFE2E2E6),
+    onSurfaceVariant = Color(0xFFC2C7CE) // For "videos count" and "size"
 )
-
-
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF2F7FA6),      // Deeper blue version of your primary
-    secondary = Color(0xFF5A8FB8),    // Softer blue (inverse of dark secondary)
-    tertiary = Color(0xFF6FC2D1),
-    background = Color(0xFFF3F6F4),   // Very light green-gray (inverse of #323634)
-    surface = Color(0xFFFFFFFF),      // Clean white surface
-    onPrimary = Color(0xFFFFFFFF),    // White text on primary
-    onSecondary = Color(0xFF0F1F2A),
-    onBackground = Color(0xFF1E2421), // Dark gray-green text
-    onSurface = Color(0xFF1E2421),
-    onTertiary = Color(0xFF0B2A33),
+    primary = Color(0xFF2F7FA6),
+    secondary = Color(0xFF5A8FB8),
+    tertiary = Color(0xFF4FA3B8),
+    background = Color(0xFFFBFDFD),
+    surface = Color(0xFFFFFFFF),
+    onPrimary = Color(0xFFFFFFFF),    // White text on the blue brand color
+    onSecondary = Color(0xFFFFFFFF),
+    onTertiary = Color(0xFFFFFFFF),
+    onBackground = Color(0xFF1A1C1E),
+    onSurface = Color(0xFF1A1C1E),
+    onSurfaceVariant = Color(0xFF535F67)
 )
 
 

@@ -50,7 +50,8 @@ fun VideoProgressSlider(
     mediaPlayer: MediaPlayer,
     isDraggingExternal: Boolean,
     onSeek: (Float) -> Unit,
-    onFinished: () -> Unit
+    onFinished: () -> Unit,
+    onDraggingChanged: (Boolean) -> Unit
 ) {
     // This state is local to JUST the slider
     var localProgress by remember { mutableStateOf(0f) }
@@ -78,10 +79,12 @@ fun VideoProgressSlider(
                     internalIsDragging = true
                     localProgress = it
                     onSeek(it)
+                    onDraggingChanged(true)
                 },
                 onfinished = {
                     internalIsDragging = false
                     onFinished()
+                    onDraggingChanged(false)
                 }
             )
         }

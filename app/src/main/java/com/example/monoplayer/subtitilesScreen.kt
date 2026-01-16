@@ -209,7 +209,7 @@ fun SubSize(vm: MyViewModel, mediaPlayer: MediaPlayer)
 
 @Composable
 fun DownloadSubs(vm: MyViewModel,mediaPlayer: MediaPlayer){
-    val subtitles = vm.downloadedSubs.collectAsState()
+    var subtitles = vm.downloadedSubs.collectAsState().value
     val currentVideo =  vm.currentVideo.collectAsState()
     var name = remember {mutableStateOf(currentVideo.value!!.name )};
     var Season =  remember {mutableStateOf(" ")};
@@ -217,7 +217,8 @@ fun DownloadSubs(vm: MyViewModel,mediaPlayer: MediaPlayer){
     val context = LocalContext.current
 
     Box(Modifier.fillMaxSize()){
-        Column(Modifier.align(Alignment.Center).size(800.dp,600.dp).clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.surface).padding(10.dp)) {
+        Column(Modifier.align(Alignment.Center).size(800.dp,600.dp).verticalScroll(rememberScrollState()).clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.surface).padding(10.dp)
+            ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -244,24 +245,23 @@ fun DownloadSubs(vm: MyViewModel,mediaPlayer: MediaPlayer){
                     contentDescription = null,
                     tint = Color.White,
                     modifier=Modifier.size(50.dp).clip(CircleShape).clickable {
-                        vm.searchForSubtitles(name.value, Season.value, Episode.value);
+                        vm.searchSubtitles(name.value)
                     },
                 )
             }
-            for (subtitle in subtitles.value){
-                Spacer(Modifier.size(5.dp))
-                Row() {
-                    Text(subtitle.name.substringBeforeLast("."), color = Color.White)
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier=Modifier.size(50.dp).clip(CircleShape).clickable {
-                            vm.downloadAndExtractSubtitle(subtitle.url, context);
-                        }
-                    );
-
-                }
+            for (subtitle in subtitles){
+                    Spacer(Modifier.size(5.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(subtitle.first, color = Color.White)
+                        Icon(
+                            painter = painterResource(R.drawable.arrow_circle_down_24),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier=Modifier.size(50.dp).clip(CircleShape).clickable {
+                                vm.downloadSubtitles(subtitle.second,context)
+                            }
+                        );
+                    }
             }
         }
     }

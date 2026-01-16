@@ -91,6 +91,7 @@ dependencies {
     // Coroutines for background tasks
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation(libs.androidx.compose.material3)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
 }
 
