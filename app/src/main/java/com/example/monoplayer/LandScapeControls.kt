@@ -274,17 +274,26 @@ fun ModernOrientationButton(vm: MyViewModel) {
     }
 }
 
-fun changeAspectRatio(mediaPlayer: MediaPlayer,activity: MainActivity): String? {
-    val screenRatio = activity.getScreenRatio() // e.g., 20:9
+fun changeAspectRatio(mediaPlayer: MediaPlayer, activity: MainActivity): String? {
+    val screenRatio = activity.getScreenRatio()
     val screenRatioStr = "${screenRatio.first}:${screenRatio.second}"
 
-    val (nextRatio, returnString) = when (mediaPlayer.aspectRatio) {
-        null -> "16:9" to "16:9"
-        "16:9" -> "4:3" to "4:3"
-        "4:3" -> screenRatioStr to "Fit Screen"
-        screenRatioStr -> "16:10" to "16:10" // Adding more common options
-        else -> null to "Default"
+    val (nextRatio, nextScale, returnString) = when (mediaPlayer.aspectRatio) {
+        null -> Triple("16:9", MediaPlayer.ScaleType.SURFACE_BEST_FIT, "16:9")
+
+        "16:9" -> Triple("4:3", MediaPlayer.ScaleType.SURFACE_BEST_FIT, "4:3")
+
+        "4:3" -> Triple(screenRatioStr, MediaPlayer.ScaleType.SURFACE_FILL, "Stretch")
+
+        screenRatioStr -> {
+            Triple("FIT_SCREEN", MediaPlayer.ScaleType.SURFACE_FIT_SCREEN, "Zoom / Fill")
+        }
+
+        else -> Triple(null, MediaPlayer.ScaleType.SURFACE_BEST_FIT, "Original")
     }
+
+    mediaPlayer.videoScale = nextScale
     mediaPlayer.aspectRatio = nextRatio
+
     return returnString
 }

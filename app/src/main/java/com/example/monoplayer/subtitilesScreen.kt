@@ -1,5 +1,9 @@
 package com.example.monoplayer
 
+import android.content.Context
+import android.net.Uri
+import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -44,12 +49,26 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.videolan.libvlc.MediaPlayer
+import java.io.File
+import kotlin.collections.addAll
 
 @Composable
-fun subtitles(vm: MyViewModel, mediaPlayer: MediaPlayer,function:()->Unit){
+fun subtitles(vm: MyViewModel
+              , mediaPlayer: MediaPlayer
+              ,allsubtitles:Map<String,List<SubtitleLine>?>
+              ,currentsubtitles: String
+              ,changeSubtitles:(String)->Unit
+              ,function:()->Unit){
+
+    BackHandler() {
+        function()
+    }
+
 
     var IsDownloadOpen = remember { mutableStateOf(false) }
-
+    val tracks = remember {
+        mediaPlayer.spuTracks?.toList() ?: emptyList()
+    }
     if(IsDownloadOpen.value){
         DownloadSubs(vm, mediaPlayer);
     }
@@ -67,13 +86,13 @@ fun subtitles(vm: MyViewModel, mediaPlayer: MediaPlayer,function:()->Unit){
         {
             Box(
                 Modifier
-                    .align(Alignment.Center)
+                    .align(Alignment.BottomCenter)
                     .width(600.dp)
-                    .clip(RoundedCornerShape(30.dp))
+                    .clip(RoundedCornerShape(20.dp))
                     .border(
                         width = 1.5.dp,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                        shape = RoundedCornerShape(30.dp)
+                        shape = RoundedCornerShape(20.dp)
                     )
                     .background(MaterialTheme.colorScheme.surface.copy(0.8f))
                     .clickable(
@@ -87,58 +106,72 @@ fun subtitles(vm: MyViewModel, mediaPlayer: MediaPlayer,function:()->Unit){
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 10.dp),
+                            .padding(vertical = 10.dp),
                         color = MaterialTheme.colorScheme.primary,
-                        fontSize = 20.sp
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                    Row() {
-                        Column(modifier = Modifier.weight(1f)) {
-                            SubSize(vm, mediaPlayer);
-                            Row(Modifier.padding(start = 20.dp).clickable {IsDownloadOpen.value = true;}) {
-                                Text(text="Download Subtitles",fontSize = 15.sp,color=Color.White)
-                            }
+                    Row(Modifier.padding(bottom = 10.dp)) {
+                        Column(modifier = Modifier.weight(0.5f)) {
+//                            SubSize(vm, mediaPlayer);
+//                            Row(Modifier.padding(start = 20.dp).clickable {IsDownloadOpen.value = true;}) {
+//                                Text(text="Download Subtitles",fontSize = 15.sp,color=Color.White)
+//                            }
                         }
                         VerticalDivider(
                             Modifier
                                 .fillMaxHeight()
+                                .width(1.5.dp)
+                                .padding(bottom = 20.dp)
                                 .background(MaterialTheme.colorScheme.primary)
                         )
                         Column(
                             modifier = Modifier
                                 .weight(1f)
+                                .padding(horizontal = 10.dp)
                                 .verticalScroll(rememberScrollState())
                         )
                         {
-                            if (!mediaPlayer.spuTracks.isNullOrEmpty()) {
-                                if (mediaPlayer.spuTracks.size > 1) {
+                            if (tracks.isEmpty()) {
+                            } else {
                                     for (track in mediaPlayer.spuTracks) {
+                                        val isSelected = track.id == mediaPlayer.spuTrack
                                         Spacer(modifier = Modifier.height(20.dp))
                                         Row(Modifier.fillMaxWidth().clickable {
                                             mediaPlayer.spuTrack = track.id
                                             function()
-                                        }) {
-                                            Spacer(modifier = Modifier.width(30.dp))
-                                            if (track.id == mediaPlayer.spuTrack) {
-                                                Icon(
-                                                    painterResource(R.drawable.baseline_check_circle_outline_24),
-                                                    modifier = Modifier.size(30.dp),
-                                                    contentDescription = "check",
-                                                    tint = Color.White
-                                                )
-                                            } else {
-                                                Spacer(modifier = Modifier.size(30.dp))
-                                            }
-                                            Spacer(modifier = Modifier.width(10.dp))
+                                        })
+                                        {
                                             Text(
+                                                modifier = Modifier.weight(1f),
                                                 text = track.name,
-                                                color = if (track.id == mediaPlayer.spuTrack) Color.White else Color(
-                                                    0xFFbfbfbf
-                                                ),
-                                                fontSize = 15.sp,
-                                                fontWeight = if (track.id == mediaPlayer.spuTrack) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                                fontSize = 13.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                             )
+                                            if(isSelected)Icon(imageVector = Icons.Default.CheckCircle,tint = MaterialTheme.colorScheme.primary, contentDescription = "check",)
                                         }
                                     }
+                            }
+                            for(sub in allsubtitles){
+                                val isSelected = sub.key == currentsubtitles
+                                Row(Modifier.fillMaxWidth().clickable {
+                                    changeSubtitles(sub.key)
+                                },verticalAlignment = Alignment.CenterVertically)
+                                {
+                                    Text(
+                                        text = sub.key,
+                                        modifier = Modifier.padding(vertical = 10.dp).weight(1f),
+                                        fontSize = 15.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    if (isSelected) Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        contentDescription = "check",
+                                    )
                                 }
                             }
                         }
@@ -265,4 +298,20 @@ fun DownloadSubs(vm: MyViewModel,mediaPlayer: MediaPlayer){
             }
         }
     }
+}
+
+fun findsubs(
+    context: Context,
+    videoPath: String
+): List<File> {
+    val videoFile = File(videoPath)
+    val parentDir = videoFile.parentFile ?: return emptyList()
+
+    if (!parentDir.exists()) {
+        parentDir.mkdirs()
+    }
+    val subtitleFiles = parentDir.listFiles { file ->
+        file.name.endsWith(".srt")
+    }
+    return subtitleFiles.toList()
 }

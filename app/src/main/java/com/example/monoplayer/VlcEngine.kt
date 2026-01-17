@@ -5,20 +5,23 @@ import android.media.AudioManager
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
-import androidx.annotation.OptIn
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.Dispatchers
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
+import java.io.File
+import java.nio.file.Files
 
 
 @Composable
@@ -27,21 +30,81 @@ fun VlcEngine(vm: MyViewModel)
     val activity = LocalActivity.current as MainActivity
     val currentVideo = vm.currentVideo.collectAsState()
     val audioManager = remember { activity.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
-
+    val lifecycleOwner = LocalLifecycleOwner.current
      BackHandler (){
          vm.setScreen(Screens.Videos)
      }
-    val (libVLC, mediaPlayer) = remember {
-        val lib = LibVLC(activity, arrayListOf(
-            "--file-caching=3000",
-            "--network-caching=3000",
-            "--codec=all",
-            "--gain=2.0",
-            "--audio-resampler=soxr"
-        ))
-        val mp = MediaPlayer(lib)
-        lib to mp
-    }
+     val (libVLC, mediaPlayer) = remember {
+         val lib = LibVLC(activity, arrayListOf(
+             "--file-caching=1500",
+             "--network-caching=1500",
+             "--audio-resampler=soxr",
+             "--clock-jitter=0",
+             "--gain=2.0",
+             "--no-stats",
+             "--no-osd",
+             "--sub-autodetect-file",
+             "--no-video-title-show" // Don't waste time rendering title text
+         ))
+         val mp = MediaPlayer(lib)
+         lib to mp
+     }
+
+
+     val focusChangeListener = remember {
+         AudioManager.OnAudioFocusChangeListener { focusChange ->
+             when (focusChange) {
+                 AudioManager.AUDIOFOCUS_LOSS -> {
+                     if (mediaPlayer.let { it != null && !it.isReleased }) {
+                         mediaPlayer.pause()
+                     }
+                 }
+                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                     if (mediaPlayer.let { it != null && !it.isReleased }) {
+                         mediaPlayer.pause()
+                     }
+                 }
+                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                     mediaPlayer.volume = 50
+                 }
+                 AudioManager.AUDIOFOCUS_GAIN -> {
+                     mediaPlayer.volume = 100
+                     mediaPlayer.play()
+                 }
+             }
+         }
+     }
+
+     DisposableEffect(lifecycleOwner) {
+         val observer = LifecycleEventObserver{ _, event ->
+             when (event) {
+                 Lifecycle.Event.ON_PAUSE -> {
+                     vm.ChangeTime(currentVideo.value!!.VideoId, mediaPlayer.position)
+                     vm.UpdateLastPlayed(currentVideo.value!!.path.substringBeforeLast("/"),currentVideo.value!!.VideoId)
+                     audioManager.abandonAudioFocus(focusChangeListener)
+                     mediaPlayer.pause()
+                 }
+                 Lifecycle.Event.ON_RESUME -> {
+                     if (!mediaPlayer.isReleased) {
+                         mediaPlayer.vlcVout.setWindowSize(activity.window.decorView.width, activity.window.decorView.height)
+                         val result = audioManager.requestAudioFocus(
+                             focusChangeListener,
+                             AudioManager.STREAM_MUSIC,
+                             AudioManager.AUDIOFOCUS_GAIN
+                         )
+                         if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                             mediaPlayer.play()
+                         }
+                     }
+                 }
+                 else -> {}
+             }
+         }
+         lifecycleOwner.lifecycle.addObserver(observer)
+         onDispose {
+             lifecycleOwner.lifecycle.removeObserver(observer)
+         }
+     }
 
     // 2. This Effect runs every time the Video URI changes (Playlist switch)
     DisposableEffect(currentVideo.value?.uri) {
@@ -56,14 +119,14 @@ fun VlcEngine(vm: MyViewModel)
         }
 
         pfd?.let { fd ->
+            val videoFile = File(video.path)
             val media = Media(libVLC, fd.fileDescriptor).apply {
-                addOption(":sub-text-scale=${vm.subScale.value}")
-                setHWDecoderEnabled(true, false)
+                setHWDecoderEnabled(true, true)
+                addOption(":clock-jitter=0")
+                addOption(":file-caching=1500")
+                addOption(":no-interact")
             }
-
-            // SETTING MEDIA SAFELY
             mediaPlayer.media = media
-
             mediaPlayer.setEventListener { event ->
                 when (event.type) {
                     MediaPlayer.Event.Playing -> {
@@ -80,10 +143,8 @@ fun VlcEngine(vm: MyViewModel)
                 }
             }
 
-            audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+            audioManager.requestAudioFocus(focusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
             mediaPlayer.play()
-
-            // Cleanup just the MEDIA, not the PLAYER, when switching tracks
             onDispose {
                 if (!mediaPlayer.isReleased) {
                     vm.ChangeTime(video.VideoId, mediaPlayer.position)

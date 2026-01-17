@@ -50,6 +50,7 @@ fun BrightnessVolume(
     var addedTime by remember { mutableLongStateOf(0L) }
     var forward by remember { mutableStateOf(false) }
     var backward by remember { mutableStateOf(false) }
+    var verticalSwipeAccumulator by remember { mutableStateOf(0f) }
 
     val savedBrightness by vm.currentBrightness.collectAsState()
     var currentBrightness by remember { mutableStateOf(savedBrightness) }
@@ -98,6 +99,7 @@ fun BrightnessVolume(
                                 seekPosition = mediaPlayer.time
                                 addedTime = 0L
                                 isSeeking = false
+                                verticalSwipeAccumulator = 0f
                             }
                         },
                         onDragEnd = {
@@ -114,25 +116,35 @@ fun BrightnessVolume(
                             val absX = Math.abs(dragAmount.x)
                             val absY = Math.abs(dragAmount.y)
 
-                            if ((isSeeking || absX > absY + 5) && !showVolume && !showBrightness) {
+                            if ((isSeeking || absX > absY + 15) && !showVolume && !showBrightness) {
                                 isSeeking = true
                                 val added = (dragAmount.x * 50).toLong()
                                 addedTime += added
                                 seekPosition = (mediaPlayer.time + addedTime).coerceIn(0L, mediaPlayer.length)
-                            } else if (!isSeeking) {
-                                if (change.position.x > size.width / 2) {
-                                    showVolume = true
-                                    volumeState = (volumeState + (if (dragAmount.y < 0) 2 else -2)).coerceIn(0, 200)
-                                    mediaPlayer.volume = volumeState
-                                } else {
-                                    showBrightness = true
-                                    val newLevel = (currentBrightness - (dragAmount.y / 1000f)).coerceIn(0f, 1f)
-                                    currentBrightness = newLevel
-                                    updateBrightness(activity, newLevel)
-                                    vm.updateSavedBrightness(newLevel)
-                                }
                             }
-                        }
+                            else if (!isSeeking) {
+                                verticalSwipeAccumulator += dragAmount.y
+                                if (Math.abs(verticalSwipeAccumulator) > 25f) {
+                                    if (change.position.x > size.width / 2) {
+                                        showVolume = true
+                                        val audioManager = activity.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
+                                        val direction = if (dragAmount.y < 0) android.media.AudioManager.ADJUST_RAISE else android.media.AudioManager.ADJUST_LOWER
+
+                                        audioManager.adjustStreamVolume(android.media.AudioManager.STREAM_MUSIC, direction, 0)
+
+                                        val currentVol = audioManager.getStreamVolume(android.media.AudioManager.STREAM_MUSIC)
+                                        val maxSystemVol = audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC)
+                                        volumeState = (currentVol * 100) / maxSystemVol
+                                    } else {
+                                        showBrightness = true
+                                        val newLevel = (currentBrightness - (dragAmount.y / 1000f)).coerceIn(0f, 1f)
+                                        currentBrightness = newLevel
+                                        updateBrightness(activity, newLevel)
+                                        vm.updateSavedBrightness(newLevel)
+                                    }
+                                    verticalSwipeAccumulator = 0f
+                                 }
+                        }   }
                     )
                 }
                 .pointerInput(Unit) {
@@ -207,10 +219,10 @@ fun BrightnessVolume(
             visible = showVolume,
             icon = when(volumeState) {
                 0 -> R.drawable.baseline_volume_off_24
-                in 1..75 -> R.drawable.baseline_volume_down_24
+                in 1..50 -> R.drawable.baseline_volume_down_24
                 else -> R.drawable.baseline_volume_up_24
             },
-            progress = volumeState / 200f,
+            progress = volumeState / 100f,
             label = "$volumeState%",
             isControlsVisible = isControlsVisible,
             modifier = Modifier.align(Alignment.TopCenter)

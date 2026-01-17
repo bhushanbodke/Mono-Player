@@ -77,6 +77,9 @@ import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerControls(
@@ -87,11 +90,15 @@ fun PlayerControls(
     togglePlaylistFalse:()->Unit,
 )
 {
+    var context  = LocalContext.current
+    val currentVideo = vm.currentVideo.collectAsState()
     var Display by remember { mutableStateOf(display.none) }
     var LockedControl by remember { mutableStateOf(false) }
     var brightness by rememberSaveable { mutableStateOf(-1f) }
     var controlResetTrigger by remember { mutableStateOf(0) }
     var isDragging by remember { mutableStateOf(false) }
+    var subtitles by remember { mutableStateOf<Map<String, List<SubtitleLine>?>>(emptyMap()) }
+    var currentSubtitles by remember { mutableStateOf("Disable") }
 
 
     val activity = LocalActivity.current as MainActivity
@@ -99,7 +106,22 @@ fun PlayerControls(
     val orientation = rememberOrientation()
     val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
 
-
+    LaunchedEffect(currentVideo.value?.path) {
+        val video = currentVideo.value ?: return@LaunchedEffect
+        val results = withContext(Dispatchers.IO) {
+            val tempMap = mutableMapOf<String, List<SubtitleLine>?>()
+            tempMap["Disable"] = null
+            findsubs(context, video.path).forEach { subFile ->
+                try {
+                    tempMap[subFile.name] = parseSrt(subFile)
+                } catch (e: Exception) {
+                    Log.e("SUB_LOADER", "Failed to parse ${subFile.name}", e)
+                }
+            }
+            tempMap
+        }
+        subtitles = results
+    }
 
     LaunchedEffect(Display, controlResetTrigger,isDragging) {
         if (Display == display.control && !isDragging) {
@@ -124,6 +146,7 @@ fun PlayerControls(
     ) {
 
         Box(Modifier.fillMaxSize()) {
+            SubtitleBox(mediaPlayer,subtitles[currentSubtitles]);
             if (!LockedControl) {
                 BrightnessVolume(vm,mediaPlayer, activity,Display== display.control,toggleControls = {
                     Display = if (Display == display.none) display.control else display.none;pokeControls()
@@ -213,7 +236,7 @@ fun PlayerControls(
                     }
                 }
                 display.subtitles -> {mediaPlayer.pause();
-                    subtitles(vm, mediaPlayer, { Display = display.none; mediaPlayer.play() })
+                    subtitles(vm, mediaPlayer,subtitles,currentSubtitles,{currentSubtitles = it},{ Display = display.none; mediaPlayer.play() })
                 }
                 display.audioSelector -> audioSelector(vm,mediaPlayer,{Display = display.control})
                 else->{}

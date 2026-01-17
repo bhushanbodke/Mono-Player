@@ -314,17 +314,14 @@ fun formatTime(ms: Long): String {
 }
 fun enterVideoMode(vm: MyViewModel,activity: MainActivity) {
     activity.requestedOrientation  = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+    hide_layout(activity);
 }
 
 fun exitVideoMode(activity: MainActivity) {
     val params = activity.window.attributes
     params.screenBrightness = -1f
     activity.window.attributes = params
-
-    // 2. Force Orientation back to Portrait
     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-
-    // 3. Show System Bars (Status bar and Nav bar)
     WindowCompat.getInsetsController(activity.window, activity.window.decorView).show(
         WindowInsetsCompat.Type.systemBars()
     )

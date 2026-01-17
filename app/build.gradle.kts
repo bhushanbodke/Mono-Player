@@ -70,7 +70,7 @@ dependencies {
     // Permissions
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
-    implementation("org.videolan.android:libvlc-all:3.6.0")
+    implementation("org.videolan.android:libvlc-all:3.2.6")
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("io.objectbox:objectbox-android:4.0.2")
 
