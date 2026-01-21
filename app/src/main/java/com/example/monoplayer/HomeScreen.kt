@@ -47,15 +47,14 @@ fun HomeScreen(vm: MyViewModel) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             Spacer(modifier = Modifier.height(40.dp))
-
             // --- BREADCRUMBS ---
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    .clip(RoundedCornerShape(30.dp))
+                    .background(MaterialTheme.colorScheme.surface)
                     .horizontalScroll(scrollState)
                     .padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
@@ -74,7 +73,7 @@ fun HomeScreen(vm: MyViewModel) {
                             modifier = Modifier
                                 .padding(horizontal = 8.dp)
                                 .size(10.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }

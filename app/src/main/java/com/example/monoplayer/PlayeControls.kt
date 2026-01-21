@@ -139,7 +139,8 @@ fun PlayerControls(
                         { Display = display.none },
                         { Display = display.audioSelector },
                         { pokeControls() },
-                        { isDragging = it })
+                        { isDragging = it },
+                        { Display = display.settings })
                 }
             }
 

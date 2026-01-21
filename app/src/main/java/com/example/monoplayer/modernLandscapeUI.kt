@@ -30,6 +30,7 @@ fun modernUI(vm: MyViewModel,
              changeAspectRatio: () -> Unit)
 {
     // LEFT PILL (Settings)
+    Spacer(Modifier.width(20.dp))
     ControlPill {
         ModernOrientationButton(vm)
         IconButton(onClick = { showLock() ;onAction()}) {
@@ -68,6 +69,7 @@ fun modernUI(vm: MyViewModel,
             Icon(painterResource(R.drawable.playlist_play_24), null, tint = Color.White)
         }
     }
+    Spacer(Modifier.width(20.dp))
 }
 
 

@@ -131,7 +131,7 @@ fun ListViewVideos(vm: MyViewModel, video: VideoModel, ShowMoreInfo: () -> Unit)
             }
 
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(text = video.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, maxLines = 2, lineHeight = 15.sp ,overflow = TextOverflow.Ellipsis)
+                Text(text = video.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, maxLines = 2, lineHeight = 18.sp ,overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(5.dp))
                 Text(text = "${formatFileSize(video.size)} • ${video.Width}p", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
