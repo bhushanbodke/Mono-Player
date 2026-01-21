@@ -1,10 +1,13 @@
 plugins {
-    alias(libs.plugins.android.application)
+     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
 android {
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.3.0"
+    }
     buildFeatures {
         compose = true
     }
@@ -71,7 +74,6 @@ dependencies {
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
     implementation("org.videolan.android:libvlc-all:3.2.6")
-    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("io.objectbox:objectbox-android:4.0.2")
 
     // Testing

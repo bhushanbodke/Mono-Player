@@ -147,11 +147,11 @@ fun main_screen(vm:MyViewModel) {
 
     if (screen != Screens.VideoPlayer) {
         Surface(
-            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
+            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
         )
         {
             if(screen != Screens.settings){
-                Box(Modifier.fillMaxSize())
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
                 {
                     when(screen){
                         Screens.permissions -> {videosPermission(vm,onPermissionGranted={videoPer.value=true})}
@@ -161,6 +161,7 @@ fun main_screen(vm:MyViewModel) {
                             {
                                 Row(
                                     Modifier.fillMaxWidth().height(100.dp)
+                                        .clip(RoundedCornerShape(10.dp))
                                         .padding(top = 50.dp, start = 10.dp, end = 20.dp),
                                     horizontalArrangement = Arrangement.Center,
                                     verticalAlignment = Alignment.CenterVertically

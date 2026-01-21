@@ -60,6 +60,7 @@ fun VideoPlayer(vm: MyViewModel, mediaPlayer: MediaPlayer, currentVideo: VideoMo
         AndroidView(
             factory = { context ->
                 SurfaceView(context).apply {
+                    keepScreenOn = true
                     holder.setFormat(android.graphics.PixelFormat.RGBX_8888)
                     val vout = mediaPlayer.vlcVout
 

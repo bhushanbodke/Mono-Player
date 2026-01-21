@@ -1,6 +1,7 @@
 package com.example.monoplayer
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -11,14 +12,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,18 +48,18 @@ fun HomeScreen(vm: MyViewModel) {
         Column(Modifier.fillMaxSize()) {
             Spacer(modifier = Modifier.height(40.dp))
 
-            // --- PREMIUM BREADCRUMBS ---
+            // --- BREADCRUMBS ---
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                     .horizontalScroll(scrollState)
                     .padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
-                val pathParts = title.split("/").filter { it.isNotEmpty()}
+                val pathParts = title.split("/").filter { it.isNotEmpty() }
                 pathParts.forEachIndexed { index, word ->
                     Text(
                         text = if (word.length > 20) word.take(15) + "..." else word,
@@ -82,7 +84,8 @@ fun HomeScreen(vm: MyViewModel) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .clip(RoundedCornerShape(20.dp)),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -127,49 +130,53 @@ fun HomeScreen(vm: MyViewModel) {
                 AnimatedContent(
                     targetState = screen,
                     transitionSpec = {
-                        if (targetState > initialState) {
-                            (slideInHorizontally { it } + fadeIn()).togetherWith(
-                                slideOutHorizontally { -it } + fadeOut()
+                        if (targetState.ordinal > initialState.ordinal) {
+                            (slideInHorizontally(animationSpec = tween(400)) { it } + fadeIn()).togetherWith(
+                                slideOutHorizontally(animationSpec = tween(400)) { -it } + fadeOut()
                             )
                         } else {
-                            (slideInHorizontally { -it } + fadeIn()).togetherWith(
-                                slideOutHorizontally { it } + fadeOut()
+                            (slideInHorizontally(animationSpec = tween(400)) { -it } + fadeIn()).togetherWith(
+                                slideOutHorizontally(animationSpec = tween(400)) { it } + fadeOut()
                             )
                         }
                     },
                     label = "ScreenTransition"
                 ) { targetScreen ->
-                    when (targetScreen) {
-                        Screens.Home -> videos(vm) // Displaying Folders
-                        Screens.Videos -> FolderScreen(vm) // Displaying specific Videos
-                        else -> videos(vm)
+                    // Wrap in Box with key to force a new transition
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        when (targetScreen) {
+                            Screens.Home -> videos(vm)
+                            Screens.Videos -> FolderScreen(vm)
+                            else -> videos(vm)
+                        }
                     }
                 }
             }
         }
 
         // --- RESUME FAB ---
-        ExtendedFloatingActionButton(
+        Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(24.dp),
-            onClick = {
+                .offset(x = (-16).dp, y = (-16).dp)
+                .padding(15.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable() {
                 val searchPath = if (screen == Screens.Home) "Internal Storage/" else title
                 val folderData = vm.lastPlayedFolder.value.find { it.folder == searchPath }
                 folderData?.lastVideoId?.let { id ->
                     vm.AllFiles.value.find { it.VideoId == id }?.let { video ->
                         vm.updateCurrentVideo(video)
                         vm.setScreen(Screens.VideoPlayer)
-                            }
-                        }
-                      },
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            elevation = FloatingActionButtonDefaults.elevation(8.dp),
-            shape = RoundedCornerShape(16.dp),
-            icon = { Icon(painterResource(R.drawable.twotone_play_circle_24), null, Modifier.size(28.dp)) },
-            text = { Text("Resume", fontWeight = FontWeight.Bold) }
-        )
+                    }
+                }
+            },
+        ){
+            Icon(imageVector = Icons.Default.PlayArrow
+                ,tint = MaterialTheme.colorScheme.surface, contentDescription =  null
+                ,modifier= Modifier.size(60.dp))
+        }
 
         // --- SORT BOTTOM SHEET OVERLAY ---
         AnimatedVisibility(
@@ -186,7 +193,6 @@ fun HomeScreen(vm: MyViewModel) {
 fun SortSheetOverlay(vm: MyViewModel, onHide: () -> Unit) {
     val currentSort by vm.sort.collectAsState()
 
-    // Scrim background
     Box(
         Modifier
             .fillMaxSize()
@@ -196,7 +202,6 @@ fun SortSheetOverlay(vm: MyViewModel, onHide: () -> Unit) {
                 indication = null
             ) { onHide() }
     ) {
-        // Bottom Sheet Content
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -210,7 +215,6 @@ fun SortSheetOverlay(vm: MyViewModel, onHide: () -> Unit) {
                     .padding(24.dp)
                     .navigationBarsPadding()
             ) {
-                // Drag Handle
                 Box(
                     Modifier
                         .size(40.dp, 4.dp)
@@ -230,7 +234,6 @@ fun SortSheetOverlay(vm: MyViewModel, onHide: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Sort Options List
                 appsort.values().forEach { option ->
                     val isSelected = currentSort == option.id
 

@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -88,12 +89,11 @@ fun FolderScreen(vm: MyViewModel) {
             items(files.size, key = { files[it].VideoId }) { id ->
                 val video = files[id]
                 val onMore = { selectedVideo = video; moreVisible = true }
-
-                when (gridValue) {
-                    1 -> ListViewVideos(vm, video, onMore)
-                    2 -> GridViewVideos(vm, video, onMore)
-                    else -> Grid3ViewVideos(vm, video, onMore)
-                }
+                    when (gridValue) {
+                        1 -> ListViewVideos(vm, video, onMore)
+                        2 -> GridViewVideos(vm, video, onMore)
+                        else -> Grid3ViewVideos(vm, video, onMore)
+                    }
             }
         }
 
@@ -124,8 +124,8 @@ fun ListViewVideos(vm: MyViewModel, video: VideoModel, ShowMoreInfo: () -> Unit)
 
                 Text(
                     text = formatTime(video.duration.toLong()),
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(4.dp).background(Color.Black.copy(0.7f), RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 2.dp),
-                    fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Bold
+                    modifier = Modifier.align(Alignment.BottomEnd).background(Color.Black.copy(0.7f), RoundedCornerShape(4.dp)).padding(2.dp),
+                    fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Bold, lineHeight = 10.sp
                 )
                 if (video.Time > 0f) SquareProgressBar(video.Time, 4, Modifier.align(Alignment.BottomCenter))
             }
@@ -157,8 +157,8 @@ fun GridViewVideos(vm: MyViewModel, video: VideoModel, ShowMoreInfo: () -> Unit)
                 VideoThumbnail(video)
                 Text(
                     text = formatTime(video.duration.toLong()),
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).background(Color.Black.copy(0.7f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp),
-                    fontSize = 10.sp, color = Color.White
+                    modifier = Modifier.align(Alignment.BottomEnd).background(Color.Black.copy(0.7f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp),
+                    fontSize = 10.sp, color = Color.White, lineHeight = 10.sp
                 )
                 if (video.Time > 0f) SquareProgressBar(video.Time, 4, Modifier.align(Alignment.BottomCenter))
             }

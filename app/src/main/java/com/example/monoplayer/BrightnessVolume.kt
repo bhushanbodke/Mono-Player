@@ -48,8 +48,6 @@ fun BrightnessVolume(
     var validDrag by remember { mutableStateOf(true) }
     var isHolding by remember { mutableStateOf(false) }
     var addedTime by remember { mutableLongStateOf(0L) }
-    var forward by remember { mutableStateOf(false) }
-    var backward by remember { mutableStateOf(false) }
     var verticalSwipeAccumulator by remember { mutableStateOf(0f) }
 
     val savedBrightness by vm.currentBrightness.collectAsState()
@@ -59,12 +57,6 @@ fun BrightnessVolume(
         if (savedBrightness >= 0f) {
             updateBrightness(activity, savedBrightness)
         }
-    }
-
-
-    LaunchedEffect(forward, backward) {
-        if (forward) { delay(500); forward = false }
-        if (backward) { delay(500); backward = false }
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -79,15 +71,6 @@ fun BrightnessVolume(
                             mediaPlayer.setRate(2.0f)
                             isHolding = true
                         },
-                        onDoubleTap = { offset ->
-                            if (offset.x < size.width / 2) {
-                                backward = true
-                                mediaPlayer.time = (mediaPlayer.time - 10000L).coerceAtLeast(0L)
-                            } else {
-                                forward = true
-                                mediaPlayer.time = (mediaPlayer.time + 10000L).coerceAtMost(mediaPlayer.length)
-                            }
-                        }
                     )
                 }
                 .pointerInput(Unit) {
@@ -190,9 +173,6 @@ fun BrightnessVolume(
             }
         }
 
-        // Double Tap Indicators (Rewind/Forward)
-        GestureIconOverlay(visible = backward, isForward = false, Modifier.align(Alignment.CenterStart).offset(x = 100.dp))
-        GestureIconOverlay(visible = forward, isForward = true, Modifier.align(Alignment.CenterEnd).offset(x = (-100.dp)))
 
         // 2x Speed Indicator
         AnimatedVisibility(

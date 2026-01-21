@@ -114,7 +114,7 @@ fun SmoothWavyVideoSlider(vm: MyViewModel,progress: Float, onSeek: (Float) -> Un
             thumb = {
                 Box(
                     Modifier
-                        .size(8.dp,20.dp).clip(RoundedCornerShape(10.dp))
+                        .size(8.dp,20.dp).clip(if(WavyBar)RoundedCornerShape(10.dp)else CircleShape)
                         .background(Color(0xFF7DBEDC), RectangleShape)
                 )
             },

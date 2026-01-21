@@ -11,6 +11,7 @@ import io.objectbox.Box
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -22,7 +23,8 @@ enum class display{
     control,
     lock,
     subtitles,
-    audioSelector
+    audioSelector,
+    settings
 }
 
 data class FolderModel(
@@ -32,6 +34,13 @@ data class FolderModel(
     val totalSize: String,
     val previewThumbnails: List<VideoModel> // Store paths of first 4 videos here
 )
+
+data class subSetting(
+    val size:Int = 20,
+    val isTransperant: Boolean =  false,
+    val isBold: Boolean = false,
+    val isShadow: Boolean = true,
+    )
 enum class appsort(val id: Int, val displayName: String){
     nameAsc(0,"File name (A to Z)"),
     nameDsc(1,"File name (Z to A)"),
@@ -60,7 +69,6 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
     var AllFiles = MutableStateFlow<List<VideoModel>>(userBox.all);
     var currentVideo = MutableStateFlow<VideoModel?>(null);
     val foldersList = MutableStateFlow<List<FolderModel>>(listOf())
-    val subScale = MutableStateFlow(1.0f)
     val isPip = MutableStateFlow(false)
     val isRefreshing = MutableStateFlow(false)
     val IsOrientLocked = MutableStateFlow(false);
@@ -76,8 +84,28 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
     val isLightMode = MutableStateFlow(settings.value.UiModeLight);
     val lastOrientation = MutableStateFlow(settings.value.lastOrient);
     val WavyBar = MutableStateFlow(settings.value.WavyBar)
+    val modernUI = MutableStateFlow(settings.value.modernUI)
+
+    val subtitleSettings  = MutableStateFlow(subSetting());
 
 
+
+
+    fun setSubSettings(
+        size: Int = subtitleSettings.value.size,
+        isTransperant: Boolean = subtitleSettings.value.isTransperant,
+        isBold: Boolean = subtitleSettings.value.isBold,
+        isShadow: Boolean = subtitleSettings.value.isShadow
+    ){
+        subtitleSettings.update { currentSettings ->
+            currentSettings.copy(
+                size = size,
+                isTransperant = isTransperant,
+                isBold = isBold,
+                isShadow = isShadow
+            )
+        }
+    }
 
     fun updateSavedBrightness(value: Float) {
         currentBrightness.value = value
@@ -100,6 +128,10 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
     }
     private fun updateSettings(update: (Setting) -> Setting) {
         settings.value = update(settings.value)
+    }
+    fun toggleModernUI(){
+        modernUI.value = !modernUI.value
+        updateSettings { it.copy(modernUI = !it.modernUI) }
     }
     fun toggleLightMode(){
         isLightMode.value = !isLightMode.value;

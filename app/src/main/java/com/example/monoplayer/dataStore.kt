@@ -24,7 +24,8 @@ data class Setting(
     var lastOrient:Int = 0,
     var GridValue:Int = 1,
     var GroupByFolder:Boolean = true,
-    var WavyBar:Boolean = true
+    var WavyBar:Boolean = true,
+    var modernUI:Boolean = true
 
 )
 

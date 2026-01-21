@@ -2,6 +2,7 @@ package com.example.monoplayer
 
 import android.Manifest
 import android.os.Build
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -106,6 +107,7 @@ fun videos(vm: MyViewModel) {
                     1 -> ListView(vm, folder)
                     2 -> GridView(vm, folder)
                     else -> Grid3View(vm, folder)
+
                 }
             }
         }

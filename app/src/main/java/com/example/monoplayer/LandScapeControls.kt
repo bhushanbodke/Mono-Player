@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -45,10 +46,14 @@ fun LandScapeControls(
     toggleShow: () -> Unit,
     showAudioSelector: () -> Unit,
     onAction: () -> Unit,
-    onDraggingChanged: (Boolean) -> Unit
+    onDraggingChanged: (Boolean) -> Unit,
+    showSettings: () -> Unit
 ) {
+    val isModernUI  by vm.modernUI.collectAsState()
     var isDragging by remember { mutableStateOf(false) }
     var showAspect by rememberSaveable { mutableStateOf(false) }
+    var showForward by rememberSaveable { mutableStateOf(false) }
+    var showBackward by rememberSaveable { mutableStateOf(false) }
     var currentRatioText by remember { mutableStateOf("Default") }
     var isPlaying by remember { mutableStateOf(mediaPlayer.isPlaying) }
     val activity = LocalActivity.current as MainActivity
@@ -57,6 +62,13 @@ fun LandScapeControls(
         if (showAspect) {
             delay(1500)
             showAspect = false
+        }
+    }
+    LaunchedEffect(showForward,showBackward) {
+        if (showForward||showBackward) {
+            delay(1000)
+            showForward = false
+            showBackward = false
         }
     }
 
@@ -93,6 +105,7 @@ fun LandScapeControls(
                 }
                 Spacer(Modifier.width(12.dp))
                 Text(
+                    modifier = Modifier.weight(1f),
                     text = video?.name ?: "Unknown Video",
                     color = Color.White,
                     fontSize = 16.sp,
@@ -101,28 +114,74 @@ fun LandScapeControls(
                     overflow = TextOverflow.Ellipsis,
                     style = TextStyle(shadow = Shadow(Color.Black, Offset(2f, 2f), 4f))
                 )
-            }
-
-            // --- RIGHT SIDE PANEL (Floaters) ---
-            Column(
-                Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 24.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color.Black.copy(0.4f))
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                ModernOrientationButton(vm)
-                IconButton(onClick = { /* BG Play logic */ }) {
-                    Icon(painterResource(R.drawable.headphones_24), null, tint = Color.White, modifier = Modifier.size(24.dp))
+                IconButton(
+                    onClick = {showSettings()},
+                    modifier = Modifier.background(Color.Black.copy(0.3f), CircleShape)
+                ) {
+                    Icon(Icons.Default.Settings, "back", tint = Color.White)
                 }
             }
 
+            // CENTER CONTROLS (Playback)
+            Row(Modifier.align(Alignment.Center),verticalAlignment = Alignment.CenterVertically)
+            {
+                Icon(
+                    painterResource(R.drawable.replay_10_24), null,
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(0.3f), CircleShape)
+                        .clickable { mediaPlayer.time -= 10000L; onAction(); showBackward = true; }
+                )
+                Spacer(Modifier.width(150.dp))
+                Column() {
+                    Icon(
+                        painterResource(if (isPlaying) R.drawable.pause_24 else R.drawable.play_arrow_24),
+                        null, tint = Color.White, modifier = Modifier
+                            .size(70.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(0.3f), CircleShape)
+                            .clickable {
+                                if (isPlaying) mediaPlayer.pause() else mediaPlayer.play()
+                                isPlaying = !isPlaying;
+                                onAction()
+                            }
+                    )
+                }
+                Spacer(Modifier.width(150.dp))
+                Icon(
+                    painterResource(R.drawable.twotone_forward_10_24), null,
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(0.3f), CircleShape)
+                        .clickable { mediaPlayer.time += 10000L; onAction(); showForward = true; }
+                )
+            }
+
+
             // --- ASPECT RATIO INDICATOR ---
+            if(showForward||showBackward){
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(y = 70.dp),
+                    color = Color.Black.copy(0.8f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = if (showForward) "+ 10" else "- 10", fontSize = 20.sp,fontWeight = FontWeight.Bold, color = Color.White,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                    )
+                }
+            }
             if (showAspect) {
                 Surface(
-                    modifier = Modifier.align(Alignment.Center),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(y = 70.dp),
                     color = Color.Black.copy(0.8f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -145,11 +204,11 @@ fun LandScapeControls(
                             listOf(Color.Transparent, Color.Black.copy(0.8f))
                         )
                     )
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = 10.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
-                    ){}
+                    ) {}
             ) {
                 VideoProgressSlider(
                     vm, mediaPlayer, isDragging,
@@ -164,78 +223,41 @@ fun LandScapeControls(
                         .padding(horizontal = 24.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // LEFT PILL (Settings)
-                    ControlPill {
-                        IconButton(onClick = { showLock() ;onAction()}) {
-                            Icon(painterResource(R.drawable.twotone_lock_24), null, tint = Color.White)
-                        }
-                        IconButton(onClick = { showAudioSelector();onAction() }) {
-                            Icon(painterResource(R.drawable.baseline_music_note_24), null, tint = Color.White)
-                        }
-                        IconButton(onClick = {
-                            currentRatioText = changeAspectRatio(mediaPlayer, activity) ?: "Default"
-                            showAspect = true;
-                            onAction()
-                        }) {
-                            Icon(painterResource(R.drawable.fit_screen_24), null, tint = Color.White)
-                        }
-                    }
-
-                    // CENTER CONTROLS (Playback)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painterResource(R.drawable.baseline_fast_rewind_24), null,
-                            tint = Color.White,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .clickable { mediaPlayer.time -= 10000L; onAction() }
-                        )
-                        Spacer(Modifier.width(24.dp))
-                        Box(
-                            Modifier
-                                .size(72.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                .clickable {
-                                    if (isPlaying) mediaPlayer.pause() else mediaPlayer.play()
-                                    isPlaying = !isPlaying;
-                                    onAction()
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painterResource(if (isPlaying) R.drawable.pause_24 else R.drawable.play_arrow_24),
-                                null, tint = Color.Black, modifier = Modifier.size(40.dp)
-                            )
-                        }
-                        Spacer(Modifier.width(24.dp))
-                        Icon(
-                            painterResource(R.drawable.baseline_fast_forward_24), null,
-                            tint = Color.White,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .clickable { mediaPlayer.time += 10000L; onAction() }
+                )
+                {
+                    if(isModernUI){
+                        modernUI(
+                            vm,
+                            mediaPlayer,
+                            activity,
+                            showLock,
+                            showSubtitle,
+                            togglePlaylist,
+                            showAudioSelector,
+                            onAction,
+                            changeAspectRatio = {
+                                currentRatioText =
+                                    changeAspectRatio(mediaPlayer, activity) ?: "Default"
+                                showAspect = true;
+                            }
                         )
                     }
-
-                    // RIGHT PILL (Tools)
-                    ControlPill {
-                        IconButton(onClick = { showSubtitle() ;onAction()}) {
-                            Icon(painterResource(R.drawable.twotone_subtitles_24), null, tint = Color.White)
-                        }
-                        IconButton(onClick = {
-                            vm.isPip.value = true
-                            activity.enterPipMode(mediaPlayer.isPlaying);
-                            onAction()
-                        }) {
-                            Icon(painterResource(R.drawable.baseline_picture_in_picture_alt_24), null, tint = Color.White)
-                        }
-                        IconButton(onClick = { togglePlaylist();onAction() }) {
-                            Icon(painterResource(R.drawable.playlist_play_24), null, tint = Color.White)
-                        }
+                    else{
+                        classicUI(
+                            vm,
+                            mediaPlayer,
+                            activity,
+                            showLock,
+                            showSubtitle,
+                            togglePlaylist,
+                            showAudioSelector,
+                            onAction,
+                            changeAspectRatio = {
+                                currentRatioText =
+                                    changeAspectRatio(mediaPlayer, activity) ?: "Default"
+                                showAspect = true;
+                            }
+                        )
                     }
                 }
             }
@@ -243,18 +265,11 @@ fun LandScapeControls(
     }
 }
 
-@Composable
-fun ControlPill(content: @Composable RowScope.() -> Unit) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color.White.copy(0.15f))
-            .border(1.dp, Color.White.copy(0.2f), RoundedCornerShape(24.dp))
-            .padding(horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        content = content
-    )
-}
+
+
+
+
+
 
 @Composable
 fun ModernOrientationButton(vm: MyViewModel) {
@@ -264,36 +279,28 @@ fun ModernOrientationButton(vm: MyViewModel) {
         onClick = {
             toggleOrientation(activity, isOrientLock, vm)
             vm.IsOrientLocked.value = !isOrientLock;
-        },
-        modifier = Modifier.background(Color.White.copy(0.1f), CircleShape)
-    ) {
+        },)
+    {
         Icon(
             painterResource(if (isOrientLock) R.drawable.twotone_screen_lock_landscape_24 else R.drawable.twotone_screen_rotation_24),
-            null, tint = Color.White, modifier = Modifier.size(20.dp)
+            null, tint = Color.White
         )
     }
 }
 
-fun changeAspectRatio(mediaPlayer: MediaPlayer, activity: MainActivity): String? {
-    val screenRatio = activity.getScreenRatio()
-    val screenRatioStr = "${screenRatio.first}:${screenRatio.second}"
+fun changeAspectRatio(mediaPlayer: MediaPlayer, activity: MainActivity): String {
+    val screen = activity.getScreenRatio()
+    val screenRatioStr = "${screen.first}:${screen.second}"
 
-    val (nextRatio, nextScale, returnString) = when (mediaPlayer.aspectRatio) {
-        null -> Triple("16:9", MediaPlayer.ScaleType.SURFACE_BEST_FIT, "16:9")
-
-        "16:9" -> Triple("4:3", MediaPlayer.ScaleType.SURFACE_BEST_FIT, "4:3")
-
-        "4:3" -> Triple(screenRatioStr, MediaPlayer.ScaleType.SURFACE_FILL, "Stretch")
-
-        screenRatioStr -> {
-            Triple("FIT_SCREEN", MediaPlayer.ScaleType.SURFACE_FIT_SCREEN, "Zoom / Fill")
-        }
-
-        else -> Triple(null, MediaPlayer.ScaleType.SURFACE_BEST_FIT, "Original")
+    val (nextRatio, nextScale, label) = when (mediaPlayer.aspectRatio) {
+        null -> Triple(screenRatioStr, MediaPlayer.ScaleType.SURFACE_FILL, "Stretch")
+        screenRatioStr -> Triple("FIT", MediaPlayer.ScaleType.SURFACE_BEST_FIT, "Fit to Screen")
+        "FIT" -> Triple("ZOOM", MediaPlayer.ScaleType.SURFACE_FIT_SCREEN, "Zoom")
+        else -> Triple(null, MediaPlayer.ScaleType.SURFACE_BEST_FIT, "Default")
     }
 
-    mediaPlayer.videoScale = nextScale
     mediaPlayer.aspectRatio = nextRatio
+    mediaPlayer.videoScale = nextScale
 
-    return returnString
+    return label
 }
