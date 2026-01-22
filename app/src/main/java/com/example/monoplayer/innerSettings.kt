@@ -87,7 +87,7 @@ fun ModernUIToggle(vm: MyViewModel){
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Modern UI",
+            text = "Minimal UI",
             modifier = Modifier.weight(1f),
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurface

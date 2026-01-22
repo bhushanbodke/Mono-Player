@@ -195,7 +195,6 @@ fun SortSheetOverlay(vm: MyViewModel, onHide: () -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null

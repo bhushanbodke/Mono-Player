@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.util.Log
 import android.util.Rational
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -195,14 +196,13 @@ fun main_screen(vm:MyViewModel) {
                                 Row(
                                     Modifier.fillMaxWidth().height(80.dp)
                                         .padding(top = 50.dp, start = 10.dp, end = 20.dp),
-                                    horizontalArrangement = Arrangement.Center,
                                     verticalAlignment = Alignment.CenterVertically
                                 )
                                 {
                                     IconButton(onClick = {vm.setScreen(Screens.Home)}) {
                                         Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "back",
                                             Modifier.size(30.dp),
-                                            tint = Color.White
+                                            tint = MaterialTheme.colorScheme.onSurface
                                         )
                                     }
                                     Spacer(Modifier.width(10.dp))
@@ -213,14 +213,12 @@ fun main_screen(vm:MyViewModel) {
                                         fontSize = 30.sp,
                                         modifier = Modifier.weight(1f)
                                     )
-                                    Row() {
-                                        IconButton(onClick = { vm.setScreen(Screens.settings) }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Settings, "settings",
-                                                Modifier.size(30.dp),
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
+                                    IconButton(onClick = { vm.setScreen(Screens.settings) }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Settings, "settings",
+                                            Modifier.size(30.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
                                     }
                                 }
                                 HomeScreen(vm)

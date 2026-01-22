@@ -31,7 +31,7 @@
     },
     {
       "id": "4:4009854156861604568",
-      "lastPropertyId": "9:495206036082112640",
+      "lastPropertyId": "10:2413966394653415351",
       "name": "Setting",
       "properties": [
         {
@@ -68,6 +68,11 @@
         {
           "id": "9:495206036082112640",
           "name": "UiModeLight",
+          "type": 1
+        },
+        {
+          "id": "10:2413966394653415351",
+          "name": "modernUI",
           "type": 1
         }
       ],
@@ -153,10 +158,57 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "6:5739012374322976848",
+      "lastPropertyId": "2:2091897944830568508",
+      "name": "ExcludedFolder",
+      "properties": [
+        {
+          "id": "1:8669817262352687266",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:2091897944830568508",
+          "name": "fullPath",
+          "indexId": "5:7685840655751738489",
+          "type": 9,
+          "flags": 34848
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "7:5165072571339246191",
+      "lastPropertyId": "3:4413906789147313836",
+      "name": "HiddenFolder",
+      "properties": [
+        {
+          "id": "1:7701092915274916459",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5477198155622686208",
+          "name": "originalPath",
+          "indexId": "6:5046596314353984657",
+          "type": 9,
+          "flags": 34848
+        },
+        {
+          "id": "3:4413906789147313836",
+          "name": "hiddenPath",
+          "type": 9
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "5:6076534294741755638",
-  "lastIndexId": "4:6815218993932387196",
+  "lastEntityId": "7:5165072571339246191",
+  "lastIndexId": "6:5046596314353984657",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

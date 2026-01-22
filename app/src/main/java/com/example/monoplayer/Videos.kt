@@ -13,16 +13,22 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorProducer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -92,6 +98,7 @@ fun videos(vm: MyViewModel) {
     val gridValue by vm.GridValue.collectAsState()
     val listState: LazyGridState = rememberLazyGridState()
 
+
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(if (gridValue == 0) 1 else if (gridValue == 1) 1 else gridValue),
@@ -116,6 +123,7 @@ fun videos(vm: MyViewModel) {
 
 @Composable
 fun ListView(vm: MyViewModel, folder: FolderModel) {
+    var expanded by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -124,8 +132,7 @@ fun ListView(vm: MyViewModel, folder: FolderModel) {
                 vm.changeTitlePath(folder.path)
                 vm.setScreen(Screens.Videos)
             },
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -157,7 +164,43 @@ fun ListView(vm: MyViewModel, folder: FolderModel) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            Box() {
+                IconButton(onClick = {
+                    expanded = true
+                }) {
+                    Icon(imageVector = Icons.Default.MoreVert,null, tint = MaterialTheme.colorScheme.onSurface)
+                }
+                dropDown(vm,folder.path,expanded, onHideClick = {expanded = false})
+            }
         }
+    }
+}
+
+@Composable
+fun dropDown(vm: MyViewModel,folderPath: String, expanded: Boolean, onHideClick: () -> Unit){
+    val iconColor = MaterialTheme.colorScheme.onSurface
+    val context = LocalContext.current
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onHideClick,
+        modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.background)
+    ) {
+        DropdownMenuItem(
+            text = { Text("Exclude this Folder") },
+            leadingIcon = {Icon(painterResource(R.drawable.folder_off_24),null,tint = iconColor)},
+            onClick = {
+                vm.addExcluded(folderPath);
+                onHideClick()
+            }
+        )
+        DropdownMenuItem(
+            text = { Text("Hide this Folder") },
+            leadingIcon = {Icon(painterResource(R.drawable.folder_eye), null, tint = iconColor)},
+            onClick = {
+                vm.hideFolder(context,folderPath);
+                onHideClick()
+            }
+        )
     }
 }
 

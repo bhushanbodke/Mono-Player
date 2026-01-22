@@ -26,9 +26,20 @@ data class Setting(
     var GroupByFolder:Boolean = true,
     var WavyBar:Boolean = true,
     var modernUI:Boolean = true
-
 )
 
+@Entity
+data class ExcludedFolder(
+    @Id var id: Long = 0,
+    @Unique(onConflict = ConflictStrategy.REPLACE)
+    var fullPath: String = ""
+)
 
+@Entity
+data class HiddenFolder(
+    @Id var id: Long = 0,
+    @Unique(onConflict = ConflictStrategy.REPLACE)
+    var fullPath: String = "",
+)
 
 

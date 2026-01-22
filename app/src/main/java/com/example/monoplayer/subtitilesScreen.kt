@@ -96,6 +96,9 @@ fun subtitles( vm: MyViewModel
                     function()
                 })
         {
+            Box(Modifier.fillMaxSize().blur(10.dp)) {
+
+            }
             Box(
                 Modifier
                     .align(Alignment.BottomCenter)
@@ -178,13 +181,13 @@ fun subtitles( vm: MyViewModel
                                     Text(
                                         modifier = Modifier.padding(top = 10.dp),
                                         text ="Embeded subtitles",
-                                        color = MaterialTheme.colorScheme.onSurface,
+                                        color = MaterialTheme.colorScheme.primary,
                                         fontSize = 15.sp,
-                                        fontWeight = FontWeight.Medium
+                                        fontWeight = FontWeight.Bold
                                     )
                                     for (track in mediaPlayer.spuTracks) {
                                         val isSelected = track.id == mediaPlayer.spuTrack
-                                        Spacer(modifier = Modifier.height(20.dp))
+                                        Spacer(modifier = Modifier.height(2.dp))
                                         Row(Modifier
                                             .fillMaxWidth()
                                             .clickable {
@@ -198,7 +201,7 @@ fun subtitles( vm: MyViewModel
                                                 text = track.name,
                                                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                                 fontSize = 13.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                             )
                                             if(isSelected)Icon(imageVector = Icons.Default.CheckCircle,tint = MaterialTheme.colorScheme.primary, contentDescription = "check",)
                                         }
@@ -209,9 +212,9 @@ fun subtitles( vm: MyViewModel
                                     Text(
                                         modifier = Modifier.padding(top = 10.dp),
                                         text ="External subtitles",
-                                        color = MaterialTheme.colorScheme.onSurface,
+                                        color = MaterialTheme.colorScheme.primary,
                                         fontSize = 15.sp,
-                                        fontWeight = FontWeight.Medium
+                                        fontWeight = FontWeight.Bold
                                     )
                                     for(sub in allsubtitles){
                                         val isSelected = sub.key == currentsubtitles
@@ -228,7 +231,7 @@ fun subtitles( vm: MyViewModel
                                                     .weight(1f),
                                                 fontSize = 13.sp,
                                                 lineHeight = 15.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                             )
                                             if (isSelected) Icon(
@@ -346,7 +349,7 @@ fun ShadowToggle(vm: MyViewModel){
             text = "Shadow",
             modifier = Modifier.weight(1f),
             fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.onSurface
         )
         Switch(
             modifier = Modifier.scale(0.7f),
@@ -375,7 +378,7 @@ fun BoldToggle(vm: MyViewModel){
             text = "Bold Subtitle",
             modifier = Modifier.weight(1f),
             fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.onSurface
         )
         Switch(
             modifier = Modifier.scale(0.7f),
@@ -404,7 +407,7 @@ fun TransToggle(vm: MyViewModel){
             text = "Transparent Background",
             modifier = Modifier.weight(1f),
             fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.onSurface
         )
         Switch(
             modifier = Modifier.scale(0.7f),
@@ -425,7 +428,7 @@ fun SubSize(vm: MyViewModel)
                     textAlign = TextAlign.Start,
                     modifier = Modifier
                         .padding(start = 10.dp),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium
                 )

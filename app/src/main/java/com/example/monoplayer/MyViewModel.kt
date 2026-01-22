@@ -3,6 +3,8 @@ package com.example.monoplayer
 
 import android.app.Application
 import android.content.Context
+import android.media.MediaScannerConnection
+import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.AndroidViewModel
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 
 
 enum class display{
@@ -64,6 +67,9 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
     val lastPlayedBox: Box<lastPlayed> = MyApp.boxStore.boxFor(lastPlayed::class.java)
     val settingBox: Box<Setting> = MyApp.boxStore.boxFor(Setting::class.java)
 
+    val excludedFoldersBox:Box<ExcludedFolder> = MyApp.boxStore.boxFor(ExcludedFolder::class.java)
+    val hiddenFolderBox:Box<HiddenFolder> = MyApp.boxStore.boxFor(HiddenFolder::class.java)
+
     val lastPlayedFolder = MutableStateFlow<List<lastPlayed>>(lastPlayedBox.all)
     val titlePath = MutableStateFlow("Internal Storage/")
     var AllFiles = MutableStateFlow<List<VideoModel>>(userBox.all);
@@ -88,8 +94,51 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
 
     val subtitleSettings  = MutableStateFlow(subSetting());
 
+    val hiddenFolders = MutableStateFlow(hiddenFolderBox.all)
+    val excludedFolders = MutableStateFlow(excludedFoldersBox.all)
 
 
+    fun hideFolder(context:Context,folderPath: String) {
+        val folder = File(folderPath)
+        if (folder.exists() && folder.isDirectory) {
+            val nomedia = File(folder, ".nomedia")
+            try {
+                if (!nomedia.exists()) {
+                    nomedia.createNewFile() // This "hides" the contents
+                }
+                hiddenFolderBox.put(HiddenFolder(0,folderPath))
+                MediaScannerConnection.scanFile(context, arrayOf(folderPath), null, null)
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+        hiddenFolders.value = hiddenFolderBox.all
+        refreshDataWithLoading()
+    }
+
+    fun unhideFolder(context:Context,folder: HiddenFolder) {
+        val nomedia = File(folder.fullPath, ".nomedia")
+        if (nomedia.exists()) {
+            nomedia.delete() // This "unhides" the contents
+            MediaScannerConnection.scanFile(context, arrayOf(folder.fullPath), null, null)
+        }
+        hiddenFolderBox.remove(folder.id)
+        hiddenFolders.value = hiddenFolderBox.all
+        refreshData()
+
+    }
+
+    fun addExcluded(path:String){
+        excludedFoldersBox.put(ExcludedFolder(0,path))
+        excludedFolders.value = excludedFoldersBox.all
+        refreshDataWithLoading()
+
+    }
+    fun removeFromExcluded(id: Long){
+        excludedFoldersBox.remove(id)
+        excludedFolders.value = excludedFoldersBox.all
+        refreshData()
+    }
 
     fun setSubSettings(
         size: Int = subtitleSettings.value.size,
@@ -227,8 +276,13 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updated_folder() {
         viewModelScope.launch(Dispatchers.IO) {
+            val excludedPaths = excludedFoldersBox.all.map { it.fullPath }
+            val hiddenPaths = hiddenFolderBox.all.map { it.fullPath }
+            val allBlacklisted = excludedPaths + hiddenPaths
             val allVideos = AllFiles.value
             val grouped = allVideos.groupBy { it.path.substringBeforeLast("/") }
+                .filter { (folderPath, _) ->
+                    allBlacklisted.none { folderPath.startsWith(it) }}
 
             val newList = grouped.map { (path, videos) ->
                 FolderModel(

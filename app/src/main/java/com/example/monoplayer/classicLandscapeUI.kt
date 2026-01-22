@@ -27,7 +27,7 @@ fun classicUI(vm: MyViewModel,
               onAction: () -> Unit,
               changeAspectRatio: () -> Unit)
 {
-    Spacer(Modifier.width(20.dp))
+    Spacer(Modifier.width(12.dp))
     Column(horizontalAlignment = Alignment.CenterHorizontally)  {
         ModernOrientationButton(vm)
         Text(text = "Orientation",color = Color.White, lineHeight = 10.sp, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -80,5 +80,5 @@ fun classicUI(vm: MyViewModel,
         }
         Text(text = "Playlist",color = Color.White, lineHeight = 10.sp, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
-    Spacer(Modifier.width(20.dp))
+    Spacer(Modifier.width(12.dp))
 }

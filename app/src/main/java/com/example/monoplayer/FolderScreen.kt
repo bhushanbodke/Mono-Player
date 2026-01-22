@@ -19,7 +19,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
@@ -27,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
@@ -96,7 +99,10 @@ fun FolderScreen(vm: MyViewModel) {
                     }
             }
         }
-
+        MonoScrollbar(
+            listState = listState,
+            modifier = Modifier.align(Alignment.CenterEnd)
+        )
         AnimatedVisibility(visible = moreVisible, enter = fadeIn(), exit = fadeOut()) {
             MoreInfo(selectedVideo, { moreVisible = false }, deleteLauncher)
         }
@@ -265,6 +271,65 @@ fun VideoThumbnailLoop(videoUri: String, durationMs: Long) {
     AnimatedContent(targetState = tick, label = "") {
         GlideImage(model = videoUri, contentDescription = null, modifier = Modifier.fillMaxSize()) {
             it.set(VideoDecoder.TARGET_FRAME, timestampUs).centerCrop()
+        }
+    }
+}
+
+
+@Composable
+fun MonoScrollbar(
+    listState: LazyGridState,
+    modifier: Modifier = Modifier
+) {
+    // 1. Calculate scroll progress (0.0 to 1.0)
+    val scrollFraction by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            if (totalItems == 0) 0f
+            else {
+                val firstVisible = listState.firstVisibleItemIndex.toFloat()
+                val visibleCount = layoutInfo.visibleItemsInfo.size.toFloat()
+                // Prevent division by zero if total items are less than visible items
+                if (totalItems <= visibleCount) 0f
+                else (firstVisible / (totalItems - visibleCount)).coerceIn(0f, 1f)
+            }
+        }
+    }
+
+    // 2. Map 0..1 to -1..1 for BiasAlignment
+    val verticalBias by remember {
+        derivedStateOf { (scrollFraction * 2f) - 1f }
+    }
+
+    // 3. Only show if the list is actually scrollable
+    val isScrollable by remember {
+        derivedStateOf { listState.layoutInfo.totalItemsCount > listState.layoutInfo.visibleItemsInfo.size }
+    }
+
+    // 4. Show/Hide with animation
+    AnimatedVisibility(
+        visible = isScrollable && listState.isScrollInProgress,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = modifier
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(end = 4.dp, top = 12.dp, bottom = 12.dp)
+                .width(4.dp)
+                .fillMaxHeight()
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(BiasAlignment(0f, verticalBias))
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.1f) // Size of the "Pill"
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+            )
         }
     }
 }
