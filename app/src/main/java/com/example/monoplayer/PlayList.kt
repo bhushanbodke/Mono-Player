@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -30,6 +31,17 @@ import androidx.compose.ui.unit.sp
 fun PlaylistP(vm: MyViewModel) {
     val folderFiles by vm.folderFiles.collectAsState()
     val currentVideo by vm.currentVideo.collectAsState()
+
+    val lazystate = rememberLazyListState()
+
+    LaunchedEffect(Unit) {
+        lazystate.animateScrollToItem(folderFiles.indexOfFirst { it.VideoId == currentVideo?.VideoId })
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+        vm.saveFolderPosition(vm.titlePath.value, lazystate.firstVisibleItemIndex)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -66,6 +78,7 @@ fun PlaylistP(vm: MyViewModel) {
 
         // --- HORIZONTAL LIST ---
         LazyRow(
+            state = lazystate,
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()

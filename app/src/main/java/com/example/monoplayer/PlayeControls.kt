@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -54,6 +55,13 @@ fun PlayerControls(
     val orientation = rememberOrientation()
     val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
 
+    BackHandler (){
+        if(Display != display.none){
+            Display = display.none
+        }
+        else vm.setScreen(Screens.Videos)
+    }
+
     // Subtitle Loading Logic
     LaunchedEffect(currentVideo.value?.path) {
         val videoPath = currentVideo.value?.path ?: return@LaunchedEffect
@@ -78,6 +86,10 @@ fun PlayerControls(
             delay(3000)
             Display = display.none
         }
+        if(Display == display.lock){
+            delay(3000)
+            Display = display.none
+        }
     }
 
     val pokeControls = {
@@ -91,14 +103,6 @@ fun PlayerControls(
         )
     ) {
         Box(Modifier.fillMaxSize()) {
-            if (Display != display.none && Display != display.control && Display != display.lock) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .blur(10.dp)
-                        .background(Color.Black.copy(0.2f))
-                )
-            }
             SubtitleBox(vm, mediaPlayer, Display,subtitles[currentSubtitles])
 
             // Tap surface for showing/hiding main controls
@@ -122,6 +126,7 @@ fun PlayerControls(
                 exit = fadeOut()
             ) {
                 if (isLandscape) {
+
                     LandScapeControls(vm, video, mediaPlayer, true,
                         { Display = display.lock; LockedControl = true },
                         { Display = display.subtitles },

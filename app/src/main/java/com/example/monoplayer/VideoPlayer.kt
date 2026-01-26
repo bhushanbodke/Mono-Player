@@ -53,9 +53,7 @@ fun VideoPlayer(vm: MyViewModel, mediaPlayer: MediaPlayer, currentVideo: VideoMo
         targetValue = if (playlistVisible) 1f else 0f,
         animationSpec = tween (400)
     )
-    LaunchedEffect(Unit) {
 
-    }
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
             factory = { context ->

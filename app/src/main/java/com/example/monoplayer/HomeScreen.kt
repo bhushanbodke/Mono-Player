@@ -31,8 +31,6 @@ import androidx.compose.ui.unit.sp
 fun HomeScreen(vm: MyViewModel) {
     val screen by vm.screen.collectAsState()
     val currentPath by vm.titlePath.collectAsState()
-    var showSettings by remember { mutableStateOf(false) }
-    val gridvalue by vm.GridValue.collectAsState()
     val scrollState = rememberScrollState()
     val isRefreshing by vm.isRefreshing.collectAsState()
 
@@ -53,7 +51,7 @@ fun HomeScreen(vm: MyViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .clip(RoundedCornerShape(30.dp))
+                    .clip(RoundedCornerShape(15.dp))
                     .background(MaterialTheme.colorScheme.surface)
                     .horizontalScroll(scrollState)
                     .padding(horizontal = 12.dp, vertical = 10.dp)
@@ -76,47 +74,6 @@ fun HomeScreen(vm: MyViewModel) {
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                }
-            }
-
-            // --- ACTION BAR ---
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                    .clip(RoundedCornerShape(20.dp)),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (screen == Screens.Home) "Library" else vm.titlePath.value.substringAfterLast("/"),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-                        .weight(1f),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                )
-
-                IconButton(onClick = { vm.toggleGrid() }) {
-                    Icon(
-                        painter = painterResource(
-                            when (gridvalue) {
-                                1 -> R.drawable.view_list_24
-                                2 -> R.drawable.grid_view_24
-                                else -> R.drawable.grid_on_24
-                            }
-                        ),
-                        contentDescription = "Toggle Grid",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                IconButton(onClick = { showSettings = true }) {
-                    Icon(
-                        painter = painterResource(R.drawable.sort_24),
-                        contentDescription = "Sort Options",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(22.dp)
-                    )
                 }
             }
 
@@ -151,39 +108,6 @@ fun HomeScreen(vm: MyViewModel) {
                     }
                 }
             }
-        }
-
-        // --- RESUME FAB ---
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .offset(x = (-16).dp, y = (-16).dp)
-                .padding(15.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
-                .clickable() {
-                val searchPath = if (screen == Screens.Home) "Internal Storage/" else title
-                val folderData = vm.lastPlayedFolder.value.find { it.folder == searchPath }
-                folderData?.lastVideoId?.let { id ->
-                    vm.AllFiles.value.find { it.VideoId == id }?.let { video ->
-                        vm.updateCurrentVideo(video)
-                        vm.setScreen(Screens.VideoPlayer)
-                    }
-                }
-            },
-        ){
-            Icon(imageVector = Icons.Default.PlayArrow
-                ,tint = MaterialTheme.colorScheme.surface, contentDescription =  null
-                ,modifier= Modifier.size(60.dp))
-        }
-
-        // --- SORT BOTTOM SHEET OVERLAY ---
-        AnimatedVisibility(
-            visible = showSettings,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
-        ) {
-            SortSheetOverlay(vm) { showSettings = false }
         }
     }
 }

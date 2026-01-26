@@ -32,6 +32,7 @@ fun modernUI(vm: MyViewModel,
     // LEFT PILL (Settings)
     ControlPill {
         ModernOrientationButton(vm)
+        Spacer(Modifier.width(12.dp))
         IconButton(onClick = { showLock() ;onAction()}) {
             Icon(painterResource(R.drawable.twotone_lock_24), null, tint = Color.White)
         }

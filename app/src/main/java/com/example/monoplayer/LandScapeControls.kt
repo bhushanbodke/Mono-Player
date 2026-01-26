@@ -125,15 +125,18 @@ fun LandScapeControls(
             // CENTER CONTROLS (Playback)
             Row(Modifier.align(Alignment.Center),verticalAlignment = Alignment.CenterVertically)
             {
-                Icon(
-                    painterResource(R.drawable.replay_10_24), null,
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(0.3f), CircleShape)
-                        .clickable { mediaPlayer.time -= 10000L; onAction(); showBackward = true; }
-                )
+                IconButton(
+                    modifier=Modifier.size(60.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(0.3f), CircleShape),
+                    onClick = { mediaPlayer.time -= 10000L; onAction(); showBackward = true; }) {
+                    Icon(
+                        painterResource(R.drawable.replay_10_24), null,
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(50.dp)
+                    )
+                }
                 Spacer(Modifier.width(150.dp))
                 Column() {
                     Icon(
@@ -150,15 +153,18 @@ fun LandScapeControls(
                     )
                 }
                 Spacer(Modifier.width(150.dp))
-                Icon(
-                    painterResource(R.drawable.twotone_forward_10_24), null,
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(60.dp)
+                IconButton(
+                    modifier=Modifier.size(60.dp)
                         .clip(CircleShape)
-                        .background(Color.Black.copy(0.3f), CircleShape)
-                        .clickable { mediaPlayer.time += 10000L; onAction(); showForward = true; }
-                )
+                        .background(Color.Black.copy(0.3f), CircleShape),
+                    onClick = { mediaPlayer.time += 10000L; onAction(); showForward = true; }) {
+                    Icon(
+                        painterResource(R.drawable.twotone_forward_10_24), null,
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(50.dp)
+                    )
+                }
             }
 
 

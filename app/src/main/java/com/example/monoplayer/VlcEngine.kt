@@ -31,9 +31,7 @@ fun VlcEngine(vm: MyViewModel)
     val currentVideo = vm.currentVideo.collectAsState()
     val audioManager = remember { activity.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     val lifecycleOwner = LocalLifecycleOwner.current
-     BackHandler (){
-         vm.setScreen(Screens.Videos)
-     }
+
      val (libVLC, mediaPlayer) = remember {
          val lib = LibVLC(activity, arrayListOf(
              "--file-caching=1500",

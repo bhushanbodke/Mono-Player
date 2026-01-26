@@ -1,7 +1,10 @@
 package com.example.monoplayer
 
 import android.Manifest
+import android.app.Activity
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,9 +14,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -99,7 +104,10 @@ fun videos(vm: MyViewModel) {
     val listState: LazyGridState = rememberLazyGridState()
 
 
+
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Column(Modifier.align(Alignment.TopCenter)) {
+            ActionBarSmall(vm)
         LazyVerticalGrid(
             columns = GridCells.Fixed(if (gridValue == 0) 1 else if (gridValue == 1) 1 else gridValue),
             contentPadding = PaddingValues(12.dp),
@@ -117,6 +125,29 @@ fun videos(vm: MyViewModel) {
 
                 }
             }
+        }
+    }
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = (-16).dp, y = (-16).dp)
+                .padding(15.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable() {
+                    val searchPath = "Internal Storage/"
+                    val folderData = vm.lastPlayedFolder.value.find { it.folder == searchPath }
+                    folderData?.lastVideoId?.let { id ->
+                        vm.AllFiles.value.find { it.VideoId == id }?.let { video ->
+                            vm.updateCurrentVideo(video)
+                            vm.setScreen(Screens.VideoPlayer)
+                        }
+                    }
+                },
+        ){
+            Icon(imageVector = Icons.Default.PlayArrow
+                ,tint = MaterialTheme.colorScheme.surface, contentDescription =  null
+                ,modifier= Modifier.size(60.dp))
         }
     }
 }
@@ -170,16 +201,20 @@ fun ListView(vm: MyViewModel, folder: FolderModel) {
                 }) {
                     Icon(imageVector = Icons.Default.MoreVert,null, tint = MaterialTheme.colorScheme.onSurface)
                 }
-                dropDown(vm,folder.path,expanded, onHideClick = {expanded = false})
+                dropDown(vm,folder,expanded, onHideClick = {expanded = false})
             }
         }
     }
 }
 
 @Composable
-fun dropDown(vm: MyViewModel,folderPath: String, expanded: Boolean, onHideClick: () -> Unit){
+fun dropDown(vm: MyViewModel, folder: FolderModel, expanded: Boolean
+             , onHideClick: () -> Unit)
+{
     val iconColor = MaterialTheme.colorScheme.onSurface
     val context = LocalContext.current
+    var selectedFolder by remember { mutableStateOf(FolderModel("","",0,"", listOf())) }
+
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onHideClick,
@@ -189,7 +224,7 @@ fun dropDown(vm: MyViewModel,folderPath: String, expanded: Boolean, onHideClick:
             text = { Text("Exclude this Folder") },
             leadingIcon = {Icon(painterResource(R.drawable.folder_off_24),null,tint = iconColor)},
             onClick = {
-                vm.addExcluded(folderPath);
+                vm.addExcluded(folder.path);
                 onHideClick()
             }
         )
@@ -197,7 +232,7 @@ fun dropDown(vm: MyViewModel,folderPath: String, expanded: Boolean, onHideClick:
             text = { Text("Hide this Folder") },
             leadingIcon = {Icon(painterResource(R.drawable.folder_eye), null, tint = iconColor)},
             onClick = {
-                vm.hideFolder(context,folderPath);
+                vm.hideFolder(context,folder.path);
                 onHideClick()
             }
         )
@@ -206,6 +241,8 @@ fun dropDown(vm: MyViewModel,folderPath: String, expanded: Boolean, onHideClick:
 
 @Composable
 fun GridView(vm: MyViewModel, folder: FolderModel) {
+    var expanded by remember { mutableStateOf(false) }
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -231,18 +268,28 @@ fun GridView(vm: MyViewModel, folder: FolderModel) {
                     )
                 }
             }
-            Column(Modifier.padding(12.dp)) {
-                Text(
-                    text = folder.name.substringAfterLast("/"),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
-                Text(
-                    text = folder.totalSize,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Row(verticalAlignment = Alignment.CenterVertically){
+                Column(Modifier.padding(12.dp).weight(1f)) {
+                    Text(
+                        text = folder.name.substringAfterLast("/"),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = folder.totalSize,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Box() {
+                    IconButton(onClick = {
+                        expanded = true
+                    }) {
+                        Icon(imageVector = Icons.Default.MoreVert,null, tint = MaterialTheme.colorScheme.onSurface)
+                    }
+                    dropDown(vm,folder,expanded, onHideClick = {expanded = false})
+                }
             }
         }
     }
@@ -279,6 +326,43 @@ fun Grid3View(vm: MyViewModel, folder: FolderModel) {
             modifier = Modifier.fillMaxWidth(),
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+@Composable
+fun ActionBarSmall(vm: MyViewModel){
+    val gridvalue by vm.GridValue.collectAsState()
+// --- ACTION BAR ---
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(20.dp)),
+        verticalAlignment = Alignment.CenterVertically
+    )
+    {
+        Text(
+            text = "Library",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .weight(1f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+        )
+
+        IconButton(onClick = { vm.toggleGrid() }) {
+            Icon(
+                painter = painterResource(
+                    when (gridvalue) {
+                        1 -> R.drawable.view_list_24
+                        2 -> R.drawable.grid_view_24
+                        else -> R.drawable.grid_on_24
+                    }
+                ),
+                contentDescription = "Toggle Grid",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp)
+            )
+        }
     }
 }
 

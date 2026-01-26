@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.RecoverableSecurityException
 import android.content.ContentUris
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.graphics.Bitmap
@@ -65,6 +66,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.documentfile.provider.DocumentFile
 import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
 import io.objectbox.annotation.Unique
@@ -245,37 +247,81 @@ fun CustomScrollIndicatorLazyColumn(
         }
     }
 }
+fun shareVideos(context: Context, uris: List<Uri>) {
+    val intent = if (uris.size == 1) {
+        Intent(Intent.ACTION_SEND).apply {
+            type = "video/*"
+            putExtra(Intent.EXTRA_STREAM, uris[0])
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    } else {
+        Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+            type = "video/*"
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+    val chooser = Intent.createChooser(intent, "Share Videos via")
+    context.startActivity(chooser)
+}
 
 fun deleteMediaByUri(
     context: Context,
-    uri: Uri,
+    uris: List<Uri>,
     launcher: ManagedActivityResultLauncher<IntentSenderRequest, ActivityResult>
 ) {
+    if (uris.isEmpty()) return
+
     val contentResolver = context.contentResolver
 
     try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11+ : Request permission to delete
-            val pendingIntent = MediaStore.createDeleteRequest(contentResolver, listOf(uri))
+            val pendingIntent = MediaStore.createDeleteRequest(contentResolver, uris)
             val request = IntentSenderRequest.Builder(pendingIntent.intentSender).build()
             launcher.launch(request)
         } else {
-            // Android 10 and below : Try direct delete
-            try {
-                contentResolver.delete(uri, null, null)
-            } catch (e: SecurityException) {
-                // Handle Android 10 specifically if it throws a security error
-                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q && e is RecoverableSecurityException) {
-                    val request = IntentSenderRequest.Builder(e.userAction.actionIntent.intentSender).build()
-                    launcher.launch(request)
+            var needsPermission = false
+
+            for (uri in uris) {
+                try {
+                    val deleted = contentResolver.delete(uri, null, null)
+                    if (deleted == 0) {
+                        Log.w("Delete", "Failed to delete: $uri")
+                    }
+                } catch (e: SecurityException) {
+                    if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q &&
+                        e is RecoverableSecurityException) {
+                        // Request permission for first file that needs it
+                        if (!needsPermission) {
+                            needsPermission = true
+                            val request = IntentSenderRequest.Builder(
+                                e.userAction.actionIntent.intentSender
+                            ).build()
+                            launcher.launch(request)
+                        }
+                    } else {
+                        Log.e("Delete", "Cannot delete: $uri", e)
+                    }
                 }
             }
         }
     } catch (e: Exception) {
+        Log.e("Delete", "Error during deletion", e)
         e.printStackTrace()
     }
 }
 
+fun deleteFolderWithPermission(context: Context, folderUri: Uri, launcher:ManagedActivityResultLauncher<IntentSenderRequest, ActivityResult>) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        try {
+            // For DocumentFile folders
+            val documentFile = DocumentFile.fromTreeUri(context, folderUri)
+            documentFile?.delete() // May still need SAF permission
+        } catch (e: Exception) {
+
+        }
+    }
+}
 
 
 

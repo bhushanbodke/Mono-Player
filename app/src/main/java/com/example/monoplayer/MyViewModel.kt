@@ -97,6 +97,15 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
     val hiddenFolders = MutableStateFlow(hiddenFolderBox.all)
     val excludedFolders = MutableStateFlow(excludedFoldersBox.all)
 
+    private val folderPositions = mutableMapOf<String, Int>()
+    fun saveFolderPosition(path: String, index: Int) {
+        folderPositions[path] = index
+    }
+
+    fun getSavedPosition(path: String): Int {
+        return folderPositions[path] ?: 0
+    }
+
 
     fun hideFolder(context:Context,folderPath: String) {
         val folder = File(folderPath)
@@ -342,10 +351,10 @@ class MyViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun removeFile(videoId: Long){
+    fun removeFile(videoUri:String){
         viewModelScope.launch (Dispatchers.IO) {
-            folderFiles.value = folderFiles.value.filter { it.VideoId != videoId }
-            AllFiles.value = AllFiles.value.filter { it.VideoId != videoId }
+            folderFiles.value = folderFiles.value.filter { it.uri != videoUri }
+            AllFiles.value = AllFiles.value.filter { it.uri != videoUri }
         }
     }
 
